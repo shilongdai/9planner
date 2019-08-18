@@ -1,0 +1,3 @@
+rootProject.name = '9planner'
+include ":ai"
+project(":ai").projectDir = file("../AI")
