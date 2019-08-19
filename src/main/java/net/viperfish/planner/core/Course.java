@@ -52,7 +52,6 @@ public class Course implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Archtype_id")
-    @JsonIgnore
     private CourseArchtype archtype;
 
     public int getId() {

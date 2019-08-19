@@ -8,15 +8,13 @@ import java.util.Objects;
 public class Schedule {
 
     private int totalCredit;
-    private List<CourseArchtype> courses;
     private List<Course> sections;
 
-    public Schedule(Collection<CourseArchtype> courses, Collection<Course> sections) {
-        this.courses = new ArrayList<>(courses);
+    public Schedule(Collection<Course> sections) {
         this.sections = new ArrayList<>(sections);
         totalCredit = 0;
-        for (CourseArchtype c : this.courses) {
-            totalCredit += c.getUnits();
+        for (Course c : this.sections) {
+            totalCredit += c.getArchtype().getUnits();
         }
     }
 
@@ -24,12 +22,8 @@ public class Schedule {
         return totalCredit;
     }
 
-    public List<CourseArchtype> getCourses() {
-        return new ArrayList<>(courses);
-    }
-
     public List<Course> getSections() {
-        return new ArrayList<>(sections);
+        return sections;
     }
 
     @Override
@@ -37,12 +31,12 @@ public class Schedule {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Schedule schedule = (Schedule) o;
-        return Objects.equals(courses, schedule.courses) &&
+        return totalCredit == schedule.totalCredit &&
                 Objects.equals(sections, schedule.sections);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(courses, sections);
+        return Objects.hash(totalCredit, sections);
     }
 }

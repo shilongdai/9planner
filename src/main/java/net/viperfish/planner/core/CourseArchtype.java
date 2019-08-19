@@ -1,5 +1,7 @@
 package net.viperfish.planner.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.List;
@@ -26,6 +28,7 @@ public class CourseArchtype implements Serializable {
     @Column(name = "Title")
     private String title;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "archtype", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Course> courses;
 

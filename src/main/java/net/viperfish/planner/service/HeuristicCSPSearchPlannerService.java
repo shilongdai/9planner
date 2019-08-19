@@ -60,7 +60,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
                 Variable<Course> var = csp.getVariable(v, Course.class);
                 sections.add(var.getValue());
             }
-            Schedule result = new Schedule(semester.getSelection(), sections);
+            Schedule result = new Schedule(sections);
             return result;
         }
         return null;
