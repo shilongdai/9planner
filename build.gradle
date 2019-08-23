@@ -20,7 +20,7 @@ apply plugin: 'io.spring.dependency-management'
 apply plugin: 'org.siouan.frontend'
 
 frontend {
-    nodeVersion = '6.17.1'
+    nodeVersion.set('6.17.1')
 }
 
 bootWar {

@@ -7,11 +7,6 @@ const defaultRequest = require('rest/interceptor/defaultRequest');
 const errorCode = require('rest/interceptor/errorCode');
 const client = rest.wrap(mime).wrap(errorCode).wrap(defaultRequest, {headers: {'Accept': 'application/json'}});
 
-let testData = {
-    targetCredit: 10,
-    archtypeIds: [388, 393, 834, 943, 1295]
-};
-
 class ScheduleSectionItem extends React.Component {
 
     constructor(props) {
@@ -91,6 +86,7 @@ class ScheduleResultDisplay extends React.Component {
             <div>
                 <SemesterListDisplay courses={courses}/>
                 <ScheduleTableDisplay sections={this.props.schedule.sections}/>
+                <p>Total Credits: {this.props.schedule.totalCredit}</p>
             </div>
         )
     }
@@ -128,54 +124,61 @@ class CourseProfileForm extends React.Component {
 
     constructor(props) {
         super(props);
-        this.courses = [""];
         this.state = {
             currentId: 2,
-            entryIds: [1]
+            targetHours: 0,
+            courses: {
+                1: ""
+            }
         };
         this.setCourse = this.setCourse.bind(this);
         this.removeCourseForm = this.removeCourseForm.bind(this);
         this.addCourseFormEntry = this.addCourseFormEntry.bind(this);
         this.onSubmitInput = this.onSubmitInput.bind(this);
+        this.setTargetHours = this.setTargetHours.bind(this);
     }
 
     setCourse(id, course) {
-        this.courses[id] = course
+        this.state.courses[id] = course
     }
 
     removeCourseForm(id) {
-        let new_course_ids = [...this.state.entryIds];
-        new_course_ids.splice(id, 1);
-        this.setState({entryIds: new_course_ids});
+        let new_courses = Object.assign({}, this.state.courses);
+        delete new_courses[id];
+        this.setState({courses: new_courses});
     }
 
     addCourseFormEntry() {
-        let new_entry_ids = [...this.state.entryIds];
-        new_entry_ids.push(this.state.currentId);
+        let new_courses = Object.assign({}, this.state.courses);
+        new_courses[this.state.currentId] = "";
 
         this.setState({
             currentId: this.state.currentId + 1,
-            entryIds: new_entry_ids
+            courses: new_courses
         })
+    }
+
+    setTargetHours(event) {
+        this.setState({targetHours: event.target.value})
     }
 
     onSubmitInput(e) {
         let scheduleCourses = [];
-        let hours = 0;
-        for (name of this.courses) {
+        let self = this;
+        for (let id in this.state.courses) {
+            let name = this.state.courses[id];
             let subject = name.split(" ")[0];
             let courseNumber = name.split(" ")[1];
             client(
                 {
                     method: "GET",
-                    path: "/api/course/${subject}/${courseNumber}"
+                    path: `/api/course/${subject}/${courseNumber}`
                 }
             ).then(function (response) {
                 scheduleCourses.push(response.entity.id);
-                hours += response.entity.units;
-                if (scheduleCourses.length === this.courses.length) {
-                    this.props.setProfile({
-                        targetCredit: hours,
+                if (scheduleCourses.length === Object.keys(self.state.courses).length) {
+                    self.props.setProfile({
+                        targetCredit: self.state.targetHours,
                         archtypeIds: scheduleCourses
                     })
                 }
@@ -186,9 +189,13 @@ class CourseProfileForm extends React.Component {
     render() {
         return (
             <div>
+                <fieldset>
+                    Target Credit Hours: <input type="text" onChange={this.setTargetHours}/>
+                </fieldset>
                 <a href="#" onClick={this.addCourseFormEntry}>new</a>
-                {this.state.currentId.map((id) => <CourseProfileFormEntry key={id} id={id} setCourse={this.setCourse}
-                                                                          removeCourseForm={this.removeCourseForm}/>)}
+                {Object.keys(this.state.courses).map((id) => <CourseProfileFormEntry key={id} id={id}
+                                                                                     setCourse={this.setCourse}
+                                                                                     removeCourseForm={this.removeCourseForm}/>)}
                 <a href="#" onClick={this.onSubmitInput}>Submit</a>
             </div>
         );
@@ -204,13 +211,23 @@ class NinePlannerApp extends React.Component {
             schedule: {
                 totalCredit: 0,
                 sections: []
+            },
+            profile: {
+                targetCredit: 0,
+                archtypeIds: []
             }
-        }
+        };
+        this.setProfile = this.setProfile.bind(this);
     }
 
-    componentDidMount() {
+    setProfile(profile) {
+        this.setState(
+            {
+                profile: profile
+            }
+        );
         client({
-            method: "POST", path: "/api/plan/profile", mime: "application/json", entity: testData,
+            method: "POST", path: "/api/plan/profile", mime: "application/json", entity: this.state.profile,
             headers: {'Content-Type': 'application/json'}
         }).then(response => {
             this.setState({schedule: response.entity})
@@ -219,7 +236,10 @@ class NinePlannerApp extends React.Component {
 
     render() {
         return (
-            <ScheduleResultDisplay schedule={this.state.schedule}/>
+            <div>
+                <CourseProfileForm setProfile={this.setProfile}/>
+                <ScheduleResultDisplay schedule={this.state.schedule}/>
+            </div>
         );
     }
 

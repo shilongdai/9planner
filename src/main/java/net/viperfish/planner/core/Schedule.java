@@ -1,9 +1,6 @@
 package net.viperfish.planner.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Schedule {
 
@@ -13,8 +10,14 @@ public class Schedule {
     public Schedule(Collection<Course> sections) {
         this.sections = new ArrayList<>(sections);
         totalCredit = 0;
+
+        Set<Long> processedCourse = new HashSet<>();
         for (Course c : this.sections) {
+            if (processedCourse.contains(c.getArchtype().getId())) {
+                continue;
+            }
             totalCredit += c.getArchtype().getUnits();
+            processedCourse.add(c.getArchtype().getId());
         }
     }
 
