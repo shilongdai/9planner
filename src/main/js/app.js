@@ -97,6 +97,105 @@ class ScheduleResultDisplay extends React.Component {
 
 }
 
+class CourseProfileFormEntry extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.onInputChange = this.onInputChange.bind(this);
+        this.onDelete = this.onDelete.bind(this);
+    }
+
+    onInputChange(event) {
+        this.props.setCourse(this.props.id, event.target.value);
+    }
+
+    onDelete(event) {
+        this.props.removeCourseForm(this.props.id);
+    }
+
+    render() {
+        return (
+            <fieldset>
+                Course: <input type="text" onChange={this.onInputChange}/>
+                <a onClick={this.onDelete} href="#">remove</a>
+            </fieldset>
+        );
+    }
+
+}
+
+class CourseProfileForm extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.courses = [""];
+        this.state = {
+            currentId: 2,
+            entryIds: [1]
+        };
+        this.setCourse = this.setCourse.bind(this);
+        this.removeCourseForm = this.removeCourseForm.bind(this);
+        this.addCourseFormEntry = this.addCourseFormEntry.bind(this);
+        this.onSubmitInput = this.onSubmitInput.bind(this);
+    }
+
+    setCourse(id, course) {
+        this.courses[id] = course
+    }
+
+    removeCourseForm(id) {
+        let new_course_ids = [...this.state.entryIds];
+        new_course_ids.splice(id, 1);
+        this.setState({entryIds: new_course_ids});
+    }
+
+    addCourseFormEntry() {
+        let new_entry_ids = [...this.state.entryIds];
+        new_entry_ids.push(this.state.currentId);
+
+        this.setState({
+            currentId: this.state.currentId + 1,
+            entryIds: new_entry_ids
+        })
+    }
+
+    onSubmitInput(e) {
+        let scheduleCourses = [];
+        let hours = 0;
+        for (name of this.courses) {
+            let subject = name.split(" ")[0];
+            let courseNumber = name.split(" ")[1];
+            client(
+                {
+                    method: "GET",
+                    path: "/api/course/${subject}/${courseNumber}"
+                }
+            ).then(function (response) {
+                scheduleCourses.push(response.entity.id);
+                hours += response.entity.units;
+                if (scheduleCourses.length === this.courses.length) {
+                    this.props.setProfile({
+                        targetCredit: hours,
+                        archtypeIds: scheduleCourses
+                    })
+                }
+            })
+        }
+    }
+
+    render() {
+        return (
+            <div>
+                <a href="#" onClick={this.addCourseFormEntry}>new</a>
+                {this.state.currentId.map((id) => <CourseProfileFormEntry key={id} id={id} setCourse={this.setCourse}
+                                                                          removeCourseForm={this.removeCourseForm}/>)}
+                <a href="#" onClick={this.onSubmitInput}>Submit</a>
+            </div>
+        );
+    }
+
+}
+
 class NinePlannerApp extends React.Component {
 
     constructor(props) {
