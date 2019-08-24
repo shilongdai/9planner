@@ -106,6 +106,7 @@ class CourseProfileFormEntry extends React.Component {
     }
 
     onDelete(event) {
+        event.preventDefault();
         this.props.removeCourseForm(this.props.id);
     }
 
@@ -148,7 +149,8 @@ class CourseProfileForm extends React.Component {
         this.setState({courses: new_courses});
     }
 
-    addCourseFormEntry() {
+    addCourseFormEntry(event) {
+        event.preventDefault();
         let new_courses = Object.assign({}, this.state.courses);
         new_courses[this.state.currentId] = "";
 
@@ -163,6 +165,7 @@ class CourseProfileForm extends React.Component {
     }
 
     onSubmitInput(e) {
+        e.preventDefault();
         let scheduleCourses = [];
         let self = this;
         for (let id in this.state.courses) {
