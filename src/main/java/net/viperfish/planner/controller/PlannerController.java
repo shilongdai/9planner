@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @RestController
 public class PlannerController {
@@ -24,16 +26,17 @@ public class PlannerController {
 
     @RequestMapping(path = "/api/plan/profile", method = RequestMethod.POST)
     public Schedule planSchedule(@RequestBody ProfileInputForm inputForm) {
-        Profile profile = new Profile(inputForm.getTargetCredit());
+        Set<CourseArchtype> portfolio = new HashSet<>();
         for (Long id : inputForm.getArchtypeIds()) {
             Optional<CourseArchtype> archtype = repo.findById(id);
             if (archtype.isPresent()) {
-                profile.getPortfolio().add(archtype.get());
+                portfolio.add(archtype.get());
             } else {
                 throw new CourseArchtypeNotFoundException();
             }
         }
 
+        Profile profile = new Profile(inputForm.getMetrics(), portfolio);
         Schedule result = planner.plan(profile);
         return result;
     }

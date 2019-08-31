@@ -1,25 +1,25 @@
 package net.viperfish.planner.controller;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import net.viperfish.planner.core.Metric;
+
+import java.util.*;
 
 public class ProfileInputForm {
 
-    private int targetCredit;
+    private Map<String, Metric> metrics;
     private List<Long> archtypeIds;
 
     public ProfileInputForm() {
-        this.targetCredit = 0;
+        this.metrics = new HashMap<>();
         archtypeIds = new ArrayList<>();
     }
 
-    public int getTargetCredit() {
-        return targetCredit;
+    public Map<String, Metric> getMetrics() {
+        return metrics;
     }
 
-    public void setTargetCredit(int targetCredit) {
-        this.targetCredit = targetCredit;
+    public void setMetrics(Map<String, Metric> metrics) {
+        this.metrics = metrics;
     }
 
     public List<Long> getArchtypeIds() {
@@ -35,12 +35,12 @@ public class ProfileInputForm {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ProfileInputForm that = (ProfileInputForm) o;
-        return targetCredit == that.targetCredit &&
+        return Objects.equals(metrics, that.metrics) &&
                 Objects.equals(archtypeIds, that.archtypeIds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(targetCredit, archtypeIds);
+        return Objects.hash(metrics, archtypeIds);
     }
 }

@@ -1,41 +1,23 @@
 package net.viperfish.planner.core;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class Profile {
 
-    private int targetUnits;
+    private Map<String, Metric> metrics;
     private Set<CourseArchtype> portfolio;
 
-    public Profile() {
-        this(17);
-    }
-
-    public Profile(int targetUnits) {
-        this(targetUnits, new HashSet<>());
-    }
-
-    public Profile(int targetUnits, Set<CourseArchtype> portfolio) {
-        this.targetUnits = targetUnits;
+    public Profile(Map<String, Metric> metrics, Set<CourseArchtype> portfolio) {
+        this.metrics = new HashMap<>(metrics);
         this.portfolio = new HashSet<>(portfolio);
     }
 
-    public int getTargetUnits() {
-        return targetUnits;
-    }
-
-    public void setTargetUnits(int targetUnits) {
-        this.targetUnits = targetUnits;
+    public Map<String, Metric> getMetrics() {
+        return new HashMap<>(metrics);
     }
 
     public Set<CourseArchtype> getPortfolio() {
-        return portfolio;
-    }
-
-    public void setPortfolio(Set<CourseArchtype> portfolio) {
-        this.portfolio = portfolio;
+        return new HashSet<>(portfolio);
     }
 
     @Override
@@ -43,12 +25,12 @@ public class Profile {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Profile profile = (Profile) o;
-        return targetUnits == profile.targetUnits &&
+        return Objects.equals(metrics, profile.metrics) &&
                 Objects.equals(portfolio, profile.portfolio);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(targetUnits, portfolio);
+        return Objects.hash(metrics, portfolio);
     }
 }

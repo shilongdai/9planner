@@ -5,13 +5,24 @@ import net.viperfish.ai.search.deterministic.*;
 import net.viperfish.planner.core.*;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import javax.annotation.PostConstruct;
+import java.util.*;
 
 @Service
 public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
+
+    private Map<String, UtilityFunctionGenerator> utilityFunctionGenerators;
+    private Map<String, ConstraintGenerator> constraintGenerators;
+
+    public HeuristicCSPSearchPlannerService() {
+        this.utilityFunctionGenerators = new HashMap<>();
+        this.constraintGenerators = new HashMap<>();
+    }
+
+    @PostConstruct
+    public void init() {
+        utilityFunctionGenerators.put("creditHourUtility", new CreditHourUtilityGenerator());
+    }
 
     @Override
     public Schedule plan(Profile profile) {
@@ -38,10 +49,29 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
     private Semester planSemester(Profile profile, Set<Semester> tried) {
         Randomizer rand = new SemesterRandomizer(profile.getPortfolio());
         LocalSearch semesterPlanner = new RandomRestartHillClimb(new SteepAscentHillClimbSearch(3), rand, 100);
-        ObjectiveFunction objectiveFunction = new SemesterCourseObjectiveFunction(profile.getTargetUnits());
-        GoalTester tester = new SemesterGoalTester(profile.getTargetUnits(), tried);
+
+        Map<String, Double> scale = extractScales(profile);
+        Map<String, UtilityFunction> utils = generateUtilityFunctions(profile);
+        ObjectiveFunction objectiveFunction = new CompositeObjectiveFunction(utils, scale);
+        GoalTester tester = new CompositeSemesterGoalTester(utils);
 
         Semester result = (Semester) semesterPlanner.solve(rand.randomState(1), objectiveFunction, tester);
+        return result;
+    }
+
+    private Map<String, Double> extractScales(Profile profile) {
+        Map<String, Double> result = new HashMap<>();
+        for (Map.Entry<String, Metric> m : profile.getMetrics().entrySet()) {
+            result.put(m.getKey(), m.getValue().getScale());
+        }
+        return result;
+    }
+
+    private Map<String, UtilityFunction> generateUtilityFunctions(Profile profile) {
+        Map<String, UtilityFunction> result = new HashMap<>();
+        for (Map.Entry<String, UtilityFunctionGenerator> e : this.utilityFunctionGenerators.entrySet()) {
+            result.put(e.getKey(), e.getValue().generate(profile));
+        }
         return result;
     }
 
@@ -51,7 +81,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
         solver.addVarHeuristic(new MinRemainHeuristic());
         solver.addVarHeuristic(new MaxDegreeHeuristic());
         ConstraintProblem csp = setUpVariable(semester);
-        setupConstraints(csp);
+        setupConstraints(profile, csp);
 
         csp = solver.solve(csp);
         if (csp != null) {
@@ -80,10 +110,6 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
                     secondaryVariations.add(section);
                 }
             }
-
-            if (primaryVariations.size() == 0) {
-                return null;
-            }
             String variableName = c.getSubject() + "-" + c.getCourseNumber();
             Variable<Course> primarySlot = new Variable<>(null, primaryVariations);
             csp.addVariable(variableName, primarySlot);
@@ -97,12 +123,21 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
         return csp;
     }
 
-    private void setupConstraints(ConstraintProblem csp) {
+    private void setupConstraints(Profile profile, ConstraintProblem csp) {
         List<String> variables = new ArrayList<>(csp.variables());
         for (int i = 0; i < variables.size(); ++i) {
             for (int j = i + 1; j < variables.size(); ++j) {
                 csp.addConstraint(new DifferentTimeConstraint(variables.get(i), variables.get(j)));
             }
+        }
+
+        Set<Constraint> constraints = new HashSet<>();
+        for (ConstraintGenerator c : constraintGenerators.values()) {
+            constraints.addAll(c.generate(profile));
+        }
+
+        for (Constraint c : constraints) {
+            csp.addConstraint(c);
         }
     }
 }
