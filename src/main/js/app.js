@@ -121,13 +121,34 @@ class CourseProfileFormEntry extends React.Component {
 
 }
 
+class CourseCreditForm extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.onInputChange = this.onInputChange.bind(this)
+    }
+
+    onInputChange(event) {
+        this.props.setMetric("creditHour", 1, {targetUnits: event.target.value})
+    }
+
+    render() {
+        return (
+            <fieldset>
+                Target Credit Hours: <input type="text" onChange={this.onInputChange}/>
+            </fieldset>
+        );
+    }
+
+}
+
 class CourseProfileForm extends React.Component {
 
     constructor(props) {
         super(props);
         this.state = {
             currentId: 2,
-            targetHours: 0,
+            metrics: {},
             courses: {
                 1: ""
             }
@@ -136,7 +157,7 @@ class CourseProfileForm extends React.Component {
         this.removeCourseForm = this.removeCourseForm.bind(this);
         this.addCourseFormEntry = this.addCourseFormEntry.bind(this);
         this.onSubmitInput = this.onSubmitInput.bind(this);
-        this.setTargetHours = this.setTargetHours.bind(this);
+        this.setMetric = this.setMetric.bind(this);
     }
 
     setCourse(id, course) {
@@ -160,8 +181,10 @@ class CourseProfileForm extends React.Component {
         })
     }
 
-    setTargetHours(event) {
-        this.setState({targetHours: event.target.value})
+    setMetric(name, scale, metric_detals) {
+        let existing_metrics = Object.assign({}, this.state.metrics);
+        existing_metrics[name] = {scale: scale, details: metric_detals};
+        this.setState({metrics: existing_metrics})
     }
 
     onSubmitInput(e) {
@@ -181,7 +204,7 @@ class CourseProfileForm extends React.Component {
                 scheduleCourses.push(response.entity.id);
                 if (scheduleCourses.length === Object.keys(self.state.courses).length) {
                     self.props.setProfile({
-                        targetCredit: self.state.targetHours,
+                        metrics: self.state.metrics,
                         archtypeIds: scheduleCourses
                     })
                 }
@@ -192,9 +215,7 @@ class CourseProfileForm extends React.Component {
     render() {
         return (
             <div>
-                <fieldset>
-                    Target Credit Hours: <input type="text" onChange={this.setTargetHours}/>
-                </fieldset>
+                <CourseCreditForm setMetric={this.setMetric}/>
                 <a href="#" onClick={this.addCourseFormEntry}>new</a>
                 {Object.keys(this.state.courses).map((id) => <CourseProfileFormEntry key={id} id={id}
                                                                                      setCourse={this.setCourse}
@@ -216,7 +237,7 @@ class NinePlannerApp extends React.Component {
                 sections: []
             },
             profile: {
-                targetCredit: 0,
+                metrics: {},
                 archtypeIds: []
             }
         };

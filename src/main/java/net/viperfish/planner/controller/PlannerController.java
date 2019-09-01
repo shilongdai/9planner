@@ -36,6 +36,7 @@ public class PlannerController {
             }
         }
 
+        logger.debug("Received metrics {}", inputForm.getMetrics());
         Profile profile = new Profile(inputForm.getMetrics(), portfolio);
         Schedule result = planner.plan(profile);
         return result;

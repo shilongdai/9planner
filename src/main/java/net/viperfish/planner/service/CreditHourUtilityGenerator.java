@@ -12,7 +12,7 @@ public class CreditHourUtilityGenerator implements UtilityFunctionGenerator {
             return new NullUtilityFunction();
         }
 
-        int targetUnits = (int) creditHour.getDetails().getOrDefault("targetUnits", 15);
+        int targetUnits = Integer.parseInt((String) creditHour.getDetails().getOrDefault("targetUnits", "0"));
         return new CreditHourUtilityFunction(targetUnits);
     }
 }

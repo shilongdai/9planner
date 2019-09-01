@@ -9,6 +9,9 @@ public class Metric {
     private double scale;
     private Map<String, Object> details;
 
+    public Metric() {
+        this(0);
+    }
 
     public Metric(double scale) {
         this.scale = scale;
@@ -35,5 +38,13 @@ public class Metric {
     @Override
     public int hashCode() {
         return Objects.hash(scale, details);
+    }
+
+    @Override
+    public String toString() {
+        return "Metric{" +
+                "scale=" + scale +
+                ", details=" + details +
+                '}';
     }
 }
