@@ -20,6 +20,9 @@ public class PlannerController {
     private CourseRepository repo;
 
     @Autowired
+    private CourseSectionRepository sectionRepository;
+
+    @Autowired
     private SchedulePlanner planner;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -27,7 +30,9 @@ public class PlannerController {
     @RequestMapping(path = "/api/plan/profile", method = RequestMethod.POST)
     public Schedule planSchedule(@RequestBody ProfileInputForm inputForm) {
         Set<CourseArchtype> portfolio = new HashSet<>();
-        for (Long id : inputForm.getArchtypeIds()) {
+        Set<Long> archTypeIds = new HashSet<>(inputForm.getArchtypeIds());
+        Set<Long> blacklistIds = new HashSet<>(inputForm.getBlacklist());
+        for (Long id : archTypeIds) {
             Optional<CourseArchtype> archtype = repo.findById(id);
             if (archtype.isPresent()) {
                 portfolio.add(archtype.get());
@@ -35,9 +40,11 @@ public class PlannerController {
                 throw new CourseArchtypeNotFoundException();
             }
         }
+        Set<Course> blackList = new HashSet<Course>();
+        sectionRepository.findAllById(blacklistIds).forEach(blackList::add);
 
         logger.debug("Received metrics {}", inputForm.getMetrics());
-        Profile profile = new Profile(inputForm.getMetrics(), portfolio);
+        Profile profile = new Profile(inputForm.getMetrics(), portfolio, blackList);
         Schedule result = planner.plan(profile);
         return result;
     }

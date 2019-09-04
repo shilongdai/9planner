@@ -27,15 +27,13 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
     @Override
     public Schedule plan(Profile profile) {
         int maxTries = 10;
-        Set<Semester> tried = new HashSet<>();
         for (int i = 0; i < maxTries; ++i) {
-            Semester semester = planSemester(profile, tried);
+            Semester semester = planSemester(profile);
             if (semester != null) {
                 Schedule schedule = generateSchedule(profile, semester);
                 if (schedule != null) {
                     return schedule;
                 }
-                tried.add(semester);
             }
         }
         return null;
@@ -46,7 +44,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
         return null;
     }
 
-    private Semester planSemester(Profile profile, Set<Semester> tried) {
+    private Semester planSemester(Profile profile) {
         Randomizer rand = new SemesterRandomizer(profile.getPortfolio());
         LocalSearch semesterPlanner = new RandomRestartHillClimb(new SteepAscentHillClimbSearch(3), rand, 100);
 
@@ -80,7 +78,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
         solver.addValHeuristic(new LeastConstrainingHeuristic());
         solver.addVarHeuristic(new MinRemainHeuristic());
         solver.addVarHeuristic(new MaxDegreeHeuristic());
-        ConstraintProblem csp = setUpVariable(semester);
+        ConstraintProblem csp = setUpVariable(semester, profile.getBlacklist());
         setupConstraints(profile, csp);
 
         csp = solver.solve(csp);
@@ -96,7 +94,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
         return null;
     }
 
-    private ConstraintProblem setUpVariable(Semester semester) {
+    private ConstraintProblem setUpVariable(Semester semester, Set<Course> blacklist) {
         ConstraintProblem csp = new ConstraintProblem();
 
         // adds slots based on semester plan
@@ -104,6 +102,9 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
             List<Course> primaryVariations = new ArrayList<>();
             List<Course> secondaryVariations = new ArrayList<>();
             for (Course section : c.getCourses()) {
+                if (blacklist.contains(section)) {
+                    continue;
+                }
                 if (section.getType() == CourseType.MAIN) {
                     primaryVariations.add(section);
                 } else {

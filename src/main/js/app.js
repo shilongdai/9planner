@@ -10,7 +10,13 @@ const client = rest.wrap(mime).wrap(errorCode).wrap(defaultRequest, {headers: {'
 class ScheduleSectionItem extends React.Component {
 
     constructor(props) {
-        super(props)
+        super(props);
+        this.blacklist_current.bind(this);
+    }
+
+    blacklist_current(event) {
+        event.preventDefault();
+        this.props.blacklist(this.props.section.id)
     }
 
     render() {
@@ -22,6 +28,7 @@ class ScheduleSectionItem extends React.Component {
                 <td>{this.props.section.dayOfWeek}</td>
                 <td>{this.props.section.startTime}</td>
                 <td>{this.props.section.endTime}</td>
+                <td><a href="#" onClick={this.blacklist_current}>blacklist</a></td>
             </tr>
         );
     }
@@ -47,7 +54,8 @@ class ScheduleTableDisplay extends React.Component {
                 </tr>
                 </thead>
                 <tbody>
-                {this.props.sections.map((section) => <ScheduleSectionItem key={section.id} section={section}/>)}
+                {this.props.sections.map((section) => <ScheduleSectionItem key={section.id} section={section}
+                                                                           blacklist={this.props.blacklist}/>)}
                 </tbody>
             </table>
         )
@@ -85,7 +93,7 @@ class ScheduleResultDisplay extends React.Component {
         return (
             <div>
                 <SemesterListDisplay courses={courses}/>
-                <ScheduleTableDisplay sections={this.props.schedule.sections}/>
+                <ScheduleTableDisplay sections={this.props.schedule.sections} blacklist={this.props.blacklist}/>
                 <p>Total Credits: {this.props.schedule.totalCredit}</p>
             </div>
         )
@@ -238,10 +246,12 @@ class NinePlannerApp extends React.Component {
             },
             profile: {
                 metrics: {},
-                archtypeIds: []
+                archtypeIds: [],
+                blacklist: []
             }
         };
         this.setProfile = this.setProfile.bind(this);
+        this.blacklist = this.blacklist.bind(this);
     }
 
     setProfile(profile) {
@@ -258,11 +268,18 @@ class NinePlannerApp extends React.Component {
         })
     }
 
+    blacklist(id) {
+        let old_profile = this.state.profile;
+        let new_profile = Object.assign({}, old_profile);
+        new_profile.blacklist.push(id);
+        this.setProfile(new_profile);
+    }
+
     render() {
         return (
             <div>
                 <CourseProfileForm setProfile={this.setProfile}/>
-                <ScheduleResultDisplay schedule={this.state.schedule}/>
+                <ScheduleResultDisplay schedule={this.state.schedule} blacklist={this.blacklist}/>
             </div>
         );
     }
