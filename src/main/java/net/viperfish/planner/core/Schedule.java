@@ -7,18 +7,15 @@ public class Schedule {
     private int totalCredit;
     private List<Course> sections;
 
-    public Schedule(Collection<Course> sections) {
-        this.sections = new ArrayList<>(sections);
-        totalCredit = 0;
+    public static final Schedule NULL_SCHEDULE = new Schedule(-1, new ArrayList<>());
 
-        Set<Long> processedCourse = new HashSet<>();
-        for (Course c : this.sections) {
-            if (processedCourse.contains(c.getArchtype().getId())) {
-                continue;
-            }
-            totalCredit += c.getArchtype().getUnits();
-            processedCourse.add(c.getArchtype().getId());
-        }
+    public Schedule(Collection<Course> sections) {
+        this(calculateCredit(sections), sections);
+    }
+
+    private Schedule(int totalCredit, Collection<Course> sections) {
+        this.sections = new ArrayList<>(sections);
+        this.totalCredit = totalCredit;
     }
 
     public int getTotalCredit() {
@@ -41,5 +38,18 @@ public class Schedule {
     @Override
     public int hashCode() {
         return Objects.hash(totalCredit, sections);
+    }
+
+    private static int calculateCredit(Collection<Course> courses) {
+        Set<Long> processedCourse = new HashSet<>();
+        int totalCredit = 0;
+        for (Course c : courses) {
+            if (processedCourse.contains(c.getArchtype().getId())) {
+                continue;
+            }
+            totalCredit += c.getArchtype().getUnits();
+            processedCourse.add(c.getArchtype().getId());
+        }
+        return totalCredit;
     }
 }

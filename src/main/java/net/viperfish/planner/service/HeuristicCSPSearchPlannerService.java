@@ -1,7 +1,10 @@
 package net.viperfish.planner.service;
 
 import net.viperfish.ai.csp.*;
-import net.viperfish.ai.search.deterministic.*;
+import net.viperfish.ai.search.deterministic.LocalSearch;
+import net.viperfish.ai.search.deterministic.RandomRestartHillClimb;
+import net.viperfish.ai.search.deterministic.Randomizer;
+import net.viperfish.ai.search.deterministic.SteepAscentHillClimbSearch;
 import net.viperfish.planner.core.*;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +39,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
                 }
             }
         }
-        return null;
+        return Schedule.NULL_SCHEDULE;
     }
 
     @Override
@@ -50,10 +53,9 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
 
         Map<String, Double> scale = extractScales(profile);
         Map<String, UtilityFunction> utils = generateUtilityFunctions(profile);
-        ObjectiveFunction objectiveFunction = new CompositeObjectiveFunction(utils, scale);
-        GoalTester tester = new CompositeSemesterGoalTester(utils);
+        CompositeObjectiveFunction objectiveFunction = new CompositeObjectiveFunction(utils, scale);
 
-        Semester result = (Semester) semesterPlanner.solve(rand.randomState(1), objectiveFunction, tester);
+        Semester result = (Semester) semesterPlanner.solve(rand.randomState(1), objectiveFunction, objectiveFunction);
         return result;
     }
 
@@ -78,7 +80,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
         solver.addValHeuristic(new LeastConstrainingHeuristic());
         solver.addVarHeuristic(new MinRemainHeuristic());
         solver.addVarHeuristic(new MaxDegreeHeuristic());
-        ConstraintProblem csp = setUpVariable(semester, profile.getBlacklist());
+        ConstraintProblem csp = setUpVariable(semester);
         setupConstraints(profile, csp);
 
         csp = solver.solve(csp);
@@ -94,7 +96,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
         return null;
     }
 
-    private ConstraintProblem setUpVariable(Semester semester, Set<Course> blacklist) {
+    private ConstraintProblem setUpVariable(Semester semester) {
         ConstraintProblem csp = new ConstraintProblem();
 
         // adds slots based on semester plan
@@ -102,9 +104,6 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
             List<Course> primaryVariations = new ArrayList<>();
             List<Course> secondaryVariations = new ArrayList<>();
             for (Course section : c.getCourses()) {
-                if (blacklist.contains(section)) {
-                    continue;
-                }
                 if (section.getType() == CourseType.MAIN) {
                     primaryVariations.add(section);
                 } else {
@@ -114,7 +113,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
             String variableName = c.getSubject() + "-" + c.getCourseNumber();
             Variable<Course> primarySlot = new Variable<>(null, primaryVariations);
             csp.addVariable(variableName, primarySlot);
-            if (secondaryVariations.size() != 0) {
+            if (!secondaryVariations.isEmpty()) {
                 Variable<Course> secondarySlot = new Variable<>(null, secondaryVariations);
                 variableName += "-SUPPL";
                 csp.addVariable(variableName, secondarySlot);

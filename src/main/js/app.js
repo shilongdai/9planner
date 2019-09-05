@@ -11,11 +11,12 @@ class ScheduleSectionItem extends React.Component {
 
     constructor(props) {
         super(props);
-        this.blacklist_current.bind(this);
+        this.blacklist_current = this.blacklist_current.bind(this);
     }
 
     blacklist_current(event) {
         event.preventDefault();
+        console.log(this.props.section);
         this.props.blacklist(this.props.section.id)
     }
 
@@ -212,6 +213,7 @@ class CourseProfileForm extends React.Component {
                 scheduleCourses.push(response.entity.id);
                 if (scheduleCourses.length === Object.keys(self.state.courses).length) {
                     self.props.setProfile({
+                        blacklist: [],
                         metrics: self.state.metrics,
                         archtypeIds: scheduleCourses
                     })
