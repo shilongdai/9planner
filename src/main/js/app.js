@@ -1,3 +1,8 @@
+import Accordion from 'react-bootstrap/Accordion';
+import Card from 'react-bootstrap/Card'
+import Button from "react-bootstrap/Button";
+import Calendar from "@toast-ui/react-calendar";
+
 const React = require('react');
 const ReactDOM = require('react-dom');
 
@@ -7,72 +12,110 @@ const defaultRequest = require('rest/interceptor/defaultRequest');
 const errorCode = require('rest/interceptor/errorCode');
 const client = rest.wrap(mime).wrap(errorCode).wrap(defaultRequest, {headers: {'Accept': 'application/json'}});
 
-class ScheduleSectionItem extends React.Component {
 
-    constructor(props) {
-        super(props);
-        this.blacklist_current = this.blacklist_current.bind(this);
-    }
+const WEEK_MAP = {
+    "MONDAY": 1,
+    "TUESDAY": 2,
+    "WEDNESDAY": 3,
+    "THURSDAY": 4,
+    "FRIDAY": 5,
+    "SATURDAY": 6,
+    "SUNDAY": 0
+};
 
-    blacklist_current(event) {
-        event.preventDefault();
-        console.log(this.props.section);
-        this.props.blacklist(this.props.section.id)
-    }
 
-    render() {
-        return (
-            <tr>
-                <td>{this.props.section.archtype.subject}</td>
-                <td>{this.props.section.archtype.courseNumber}</td>
-                <td>{this.props.section.section}</td>
-                <td>{this.props.section.dayOfWeek}</td>
-                <td>{this.props.section.startTime}</td>
-                <td>{this.props.section.endTime}</td>
-                <td><a href="#" onClick={this.blacklist_current}>blacklist</a></td>
-            </tr>
-        );
-    }
-
+function getWeekDay(day) {
+    let date = new Date();
+    let dayOfWeek = date.getDay();
+    let diff = date.getDate() - dayOfWeek + day;
+    return new Date(date.setDate(diff))
 }
 
-class ScheduleTableDisplay extends React.Component {
+
+function getScheduleDuration(courseSection) {
+    let courseStartTime = courseSection.startTime.toString().padStart(4, '0');
+    let courseStartHr = courseStartTime.substr(0, 2);
+    let courseStartMin = courseStartTime.substr(2, 2);
+    let courseEndTime = courseSection.endTime.toString().padStart(4, '0');
+    let courseEndHr = courseEndTime.substr(0, 2);
+    let courseEndMin = courseEndTime.substr(2, 2);
+    let result = [];
+
+    for (let dayOfWeek of courseSection.dayOfWeek) {
+        let start_time = getWeekDay(WEEK_MAP[dayOfWeek]);
+        let end_time = getWeekDay(WEEK_MAP[dayOfWeek]);
+
+        start_time.setHours(parseInt(courseStartHr));
+        start_time.setMinutes(parseInt(courseStartMin));
+        end_time.setHours(parseInt(courseEndHr));
+        end_time.setMinutes(parseInt(courseEndMin));
+
+        result.push({start: start_time, end: end_time})
+    }
+
+    return result;
+}
+
+
+function getRandomColor() {
+    var letters = '0123456789abcdef';
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+
+class ScheduleSectionsDisplay extends React.Component {
     constructor(props) {
         super(props)
     }
 
     render() {
+        let calendars = [];
+        let colors = {};
+        for (let item of this.props.courses) {
+            let calColor = getRandomColor();
+            calendars.push({
+                id: item.id,
+                name: item.subject + item.courseNumber.toString(),
+                bgColor: calColor,
+                borderColor: calColor,
+                color: calColor
+            });
+            colors[item.id] = calColor;
+        }
+
+        let schedules = [];
+        let currentScheduleId = 0;
+        for (let item of this.props.sections) {
+            let duration = getScheduleDuration(item);
+            for (let timeframe of duration) {
+                schedules.push({
+                    id: currentScheduleId++,
+                    trueId: item.id,
+                    calendarId: item.archtype.id,
+                    title: item.archtype.subject + item.archtype.courseNumber + "-" + item.section,
+                    category: "time",
+                    start: timeframe.start.toISOString(),
+                    end: timeframe.end.toISOString(),
+                    isReadOnly: true,
+                    bgColor: colors[item.id],
+                    borderColor: colors[item.id],
+                    color: colors[item.id]
+                });
+            }
+        }
+
         return (
-            <table>
-                <thead>
-                <tr>
-                    <th>Subject</th>
-                    <th>Course Number</th>
-                    <th>Section</th>
-                    <th>Days</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                </tr>
-                </thead>
-                <tbody>
-                {this.props.sections.map((section) => <ScheduleSectionItem key={section.id} section={section}
-                                                                           blacklist={this.props.blacklist}/>)}
-                </tbody>
-            </table>
+            <Calendar usageStatistics={false} defaultView={"week"} disableDblClick={true} disableClick={true}
+                      isReadOnly={true} taskView={false} scheduleView={true} useDetailPopup={true} calendars={calendars}
+                      schedules={schedules}/>
         )
     }
 }
 
-class SemesterListDisplay extends React.Component {
-    constructor(props) {
-        super(props)
-    }
-
-    render() {
-        return this.props.courses.map((c) => <li
-            key={c.id}>{c.subject} {c.courseNumber}</li>)
-    }
-}
 
 class ScheduleResultDisplay extends React.Component {
 
@@ -93,8 +136,8 @@ class ScheduleResultDisplay extends React.Component {
         }
         return (
             <div>
-                <SemesterListDisplay courses={courses}/>
-                <ScheduleTableDisplay sections={this.props.schedule.sections} blacklist={this.props.blacklist}/>
+                <ScheduleSectionsDisplay courses={courses} sections={this.props.schedule.sections}
+                                         blacklist={this.props.blacklist}/>
                 <p>Total Credits: {this.props.schedule.totalCredit}</p>
             </div>
         )
@@ -225,11 +268,35 @@ class CourseProfileForm extends React.Component {
     render() {
         return (
             <div>
-                <CourseCreditForm setMetric={this.setMetric}/>
-                <a href="#" onClick={this.addCourseFormEntry}>new</a>
-                {Object.keys(this.state.courses).map((id) => <CourseProfileFormEntry key={id} id={id}
-                                                                                     setCourse={this.setCourse}
-                                                                                     removeCourseForm={this.removeCourseForm}/>)}
+                <Accordion defaultActiveKey="0">
+                    <Card>
+                        <Card.Header>
+                            <Accordion.Toggle as={Button} variant="link" eventKey="0">
+                                Courses
+                            </Accordion.Toggle>
+                        </Card.Header>
+                        <Accordion.Collapse eventKey="0">
+                            <Card.Body>
+                                <a href="#" onClick={this.addCourseFormEntry}>new</a>
+                                {Object.keys(this.state.courses).map((id) => <CourseProfileFormEntry key={id} id={id}
+                                                                                                     setCourse={this.setCourse}
+                                                                                                     removeCourseForm={this.removeCourseForm}/>)}
+                            </Card.Body>
+                        </Accordion.Collapse>
+                    </Card>
+                    <Card>
+                        <Card.Header>
+                            <Accordion.Toggle as={Button} variant="link" eventKey="1">
+                                Goals
+                            </Accordion.Toggle>
+                        </Card.Header>
+                        <Accordion.Collapse eventKey="1">
+                            <Card.Body>
+                                <CourseCreditForm setMetric={this.setMetric}/>
+                            </Card.Body>
+                        </Accordion.Collapse>
+                    </Card>
+                </Accordion>
                 <a href="#" onClick={this.onSubmitInput}>Submit</a>
             </div>
         );
