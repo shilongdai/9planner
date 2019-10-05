@@ -78,7 +78,7 @@ class ScheduleSectionsDisplay extends React.Component {
         for (let item of this.props.courses) {
             let calColor = getRandomColor();
             calendars.push({
-                id: item.id,
+                id: item.id.toString(),
                 name: item.subject + item.courseNumber.toString(),
                 bgColor: calColor,
                 borderColor: calColor,
@@ -86,16 +86,15 @@ class ScheduleSectionsDisplay extends React.Component {
             });
             colors[item.id] = calColor;
         }
-
         let schedules = [];
         let currentScheduleId = 0;
         for (let item of this.props.sections) {
             let duration = getScheduleDuration(item);
             for (let timeframe of duration) {
                 schedules.push({
-                    id: currentScheduleId++,
-                    trueId: item.id,
-                    calendarId: item.archtype.id,
+                    id: (currentScheduleId++).toString(),
+                    trueId: item.id.toString(),
+                    calendarId: item.archtype.id.toString(),
                     title: item.archtype.subject + item.archtype.courseNumber + "-" + item.section,
                     category: "time",
                     start: timeframe.start.toISOString(),
@@ -107,7 +106,6 @@ class ScheduleSectionsDisplay extends React.Component {
                 });
             }
         }
-
         return (
             <Calendar usageStatistics={false} defaultView={"week"} disableDblClick={true} disableClick={true}
                       isReadOnly={true} taskView={false} scheduleView={true} useDetailPopup={true} calendars={calendars}
@@ -194,6 +192,75 @@ class CourseCreditForm extends React.Component {
 
 }
 
+class SubjectPriorityEntry extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.onFormChange = this.onFormChange.bind(this);
+    }
+
+
+    onFormChange(event) {
+        this.props.updateMetric(this.props.subject, event.target.value)
+    }
+
+    render() {
+        return (
+            <fieldset>
+                {this.props.subject}: <input type="text" onChange={this.onFormChange}/>
+            </fieldset>
+        )
+    }
+
+}
+
+class SubjectPriorityForm extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.subjects = {};
+        this.updateSubjectList(props.courses);
+        this.updateMetric = this.updateMetric.bind(this);
+    }
+
+    updateMetric(subject, priority) {
+        this.subjects[subject] = priority;
+        this.props.setMetric("subjectPriority", 1, {ordering: this.subjects});
+    }
+
+    updateSubjectList(courses) {
+        let subjects = new Set();
+        for (let i in courses) {
+            let course = courses[i];
+            if (course.trim().length === 0) {
+                continue;
+            }
+            let s = course.split(" ");
+            subjects.add(s[0]);
+        }
+        let subjectMap = {};
+        for (let s of subjects) {
+            if (!(s in this.subjects)) {
+                subjectMap[s] = 1
+            } else {
+                subjectMap[s] = this.subjects[s];
+            }
+        }
+        this.subjects = subjectMap;
+    }
+
+    render() {
+        this.updateSubjectList(this.props.courses);
+        return (
+            <div>
+                {Object.keys(this.subjects).map((subject) => <SubjectPriorityEntry key={subject} subject={subject}
+                                                                                   updateMetric={this.updateMetric}/>)}
+            </div>
+        )
+    }
+
+}
+
 class CourseProfileForm extends React.Component {
 
     constructor(props) {
@@ -213,7 +280,9 @@ class CourseProfileForm extends React.Component {
     }
 
     setCourse(id, course) {
-        this.state.courses[id] = course
+        let new_courses = Object.assign({}, this.state.courses);
+        new_courses[id] = course;
+        this.setState({courses: new_courses});
     }
 
     removeCourseForm(id) {
@@ -287,12 +356,24 @@ class CourseProfileForm extends React.Component {
                     <Card>
                         <Card.Header>
                             <Accordion.Toggle as={Button} variant="link" eventKey="1">
-                                Goals
+                                Credit Hours
                             </Accordion.Toggle>
                         </Card.Header>
                         <Accordion.Collapse eventKey="1">
                             <Card.Body>
                                 <CourseCreditForm setMetric={this.setMetric}/>
+                            </Card.Body>
+                        </Accordion.Collapse>
+                    </Card>
+                    <Card>
+                        <Card.Header>
+                            <Accordion.Toggle as={Button} variant="link" eventKey="2">
+                                Subject Priorities
+                            </Accordion.Toggle>
+                        </Card.Header>
+                        <Accordion.Collapse eventKey="2">
+                            <Card.Body>
+                                <SubjectPriorityForm courses={this.state.courses} setMetric={this.setMetric}/>
                             </Card.Body>
                         </Accordion.Collapse>
                     </Card>

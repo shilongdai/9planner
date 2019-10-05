@@ -25,6 +25,7 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
     @PostConstruct
     public void init() {
         utilityFunctionGenerators.put("creditHourUtility", new CreditHourUtilityGenerator());
+        utilityFunctionGenerators.put("subjectRanking", new SubjectPriorityUtilityGenerator());
     }
 
     @Override
