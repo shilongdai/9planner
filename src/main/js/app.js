@@ -74,7 +74,6 @@ class ScheduleSectionsDisplay extends React.Component {
 
     render() {
         let calendars = [];
-        let colors = {};
         for (let item of this.props.courses) {
             let calColor = getRandomColor();
             calendars.push({
@@ -82,9 +81,7 @@ class ScheduleSectionsDisplay extends React.Component {
                 name: item.subject + item.courseNumber.toString(),
                 bgColor: calColor,
                 borderColor: calColor,
-                color: calColor
             });
-            colors[item.id] = calColor;
         }
         let schedules = [];
         let currentScheduleId = 0;
@@ -99,10 +96,6 @@ class ScheduleSectionsDisplay extends React.Component {
                     category: "time",
                     start: timeframe.start.toISOString(),
                     end: timeframe.end.toISOString(),
-                    isReadOnly: true,
-                    bgColor: colors[item.id],
-                    borderColor: colors[item.id],
-                    color: colors[item.id]
                 });
             }
         }
