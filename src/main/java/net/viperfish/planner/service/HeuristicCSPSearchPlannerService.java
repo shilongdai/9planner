@@ -9,13 +9,16 @@ import net.viperfish.planner.core.*;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
 
     private Map<String, UtilityFunctionGenerator> utilityFunctionGenerators;
-    private Map<String, ConstraintGenerator> constraintGenerators;
+    private Map<String, ConstraintHandler> constraintGenerators;
 
     public HeuristicCSPSearchPlannerService() {
         this.utilityFunctionGenerators = new HashMap<>();
@@ -132,13 +135,9 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
             }
         }
 
-        Set<Constraint> constraints = new HashSet<>();
-        for (ConstraintGenerator c : constraintGenerators.values()) {
-            constraints.addAll(c.generate(profile));
+        for (ConstraintHandler c : constraintGenerators.values()) {
+            c.handle(profile, csp);
         }
 
-        for (Constraint c : constraints) {
-            csp.addConstraint(c);
-        }
     }
 }
