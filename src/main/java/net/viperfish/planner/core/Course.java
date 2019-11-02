@@ -160,6 +160,10 @@ public class Course implements Serializable {
         return EnumSet.copyOf(result);
     }
 
+    public TimeRange getTimeRange() {
+        return new TimeRange(startTime, endTime);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -2,6 +2,7 @@ import Accordion from 'react-bootstrap/Accordion';
 import Card from 'react-bootstrap/Card'
 import Button from "react-bootstrap/Button";
 import Calendar from "@toast-ui/react-calendar";
+import Modal from "react-bootstrap/Modal";
 
 const React = require('react');
 const ReactDOM = require('react-dom');
@@ -67,12 +68,63 @@ function getRandomColor() {
 }
 
 
-class ScheduleSectionsDisplay extends React.Component {
+class CourseDisplayModal extends React.Component {
+
     constructor(props) {
-        super(props)
+        super(props);
+        this.handleBlackList = this.handleBlackList.bind(this);
     }
 
     render() {
+        return (
+            <Modal show={this.props.course != null} onHide={this.handleClose}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Remove Test</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>Remove Test</Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={this.props.closeModal}>
+                        Close
+                    </Button>
+                    <Button variant="danger" onClick={this.handleBlackList}>
+                        Remove
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        )
+    }
+
+
+    handleBlackList() {
+        this.props.blacklist(this.props.course.id);
+        this.props.closeModal();
+    }
+
+}
+
+
+class ScheduleSectionsDisplay extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {lastClicked: null};
+        this.displaySection = this.displaySchedule.bind(this);
+        this.closeModal = this.closeModal.bind(this);
+    }
+
+    displaySchedule(event) {
+        if (this.state.lastClicked !== event.schedule.id) {
+            this.setState({lastClicked: event.schedule.id})
+        }
+    }
+
+    closeModal() {
+        console.log("close modal called");
+        this.setState({lastClicked: null})
+    }
+
+    render() {
+        console.log("Updating the rendition of calendar");
+        let scheduleIdMap = {};
         let calendars = [];
         for (let item of this.props.courses) {
             let calColor = getRandomColor();
@@ -85,12 +137,14 @@ class ScheduleSectionsDisplay extends React.Component {
         }
         let schedules = [];
         let currentScheduleId = 0;
+        let sectionMap = {};
         for (let item of this.props.sections) {
             let duration = getScheduleDuration(item);
+            sectionMap[item.id] = item;
             for (let timeframe of duration) {
+                scheduleIdMap[currentScheduleId] = item.id;
                 schedules.push({
                     id: (currentScheduleId++).toString(),
-                    trueId: item.id.toString(),
                     calendarId: item.archtype.id.toString(),
                     title: item.archtype.subject + item.archtype.courseNumber + "-" + item.section,
                     category: "time",
@@ -99,10 +153,20 @@ class ScheduleSectionsDisplay extends React.Component {
                 });
             }
         }
+
+        let modalCourse = null;
+        if (this.state.lastClicked != null) {
+            modalCourse = sectionMap[scheduleIdMap[this.state.lastClicked]];
+        }
         return (
-            <Calendar usageStatistics={false} defaultView={"week"} disableDblClick={true} disableClick={true}
-                      isReadOnly={true} taskView={false} scheduleView={true} useDetailPopup={true} calendars={calendars}
-                      schedules={schedules}/>
+            <>
+                <Calendar usageStatistics={false} defaultView={"week"} disableDblClick={true} disableClick={true}
+                          isReadOnly={true} taskView={false} scheduleView={true} useDetailPopup={false}
+                          calendars={calendars}
+                          schedules={schedules} onClickSchedule={this.displaySection}/>
+
+                <CourseDisplayModal closeModal={this.closeModal} course={modalCourse} blacklist={this.props.blacklist}/>
+            </>
         )
     }
 }

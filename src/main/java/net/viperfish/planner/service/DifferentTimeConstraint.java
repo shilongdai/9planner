@@ -25,9 +25,7 @@ public class DifferentTimeConstraint extends Constraint {
         for (Course c : thatCourseVar.getVariation()) {
             Set<DayOfWeek> thatDay = c.getDayOfWeek();
             if (thatDay.removeAll(thisDay)) {
-                boolean thisAfterThat = thisCourse.getStartTime() > c.getEndTime();
-                boolean thisBeforeThat = thisCourse.getEndTime() < c.getStartTime();
-                if (thisAfterThat || thisBeforeThat) {
+                if (!thisCourse.getTimeRange().overlap(c.getTimeRange())) {
                     return true;
                 }
             } else {
