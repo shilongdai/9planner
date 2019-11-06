@@ -53,7 +53,7 @@ public class TimeRange implements Serializable {
     }
 
     public boolean contains(TimeRange other) {
-        return startTime >= other.startTime && endTime <= other.endTime;
+        return startTime <= other.startTime && endTime >= other.endTime;
     }
 
     @Override

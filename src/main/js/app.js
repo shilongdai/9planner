@@ -118,12 +118,10 @@ class ScheduleSectionsDisplay extends React.Component {
     }
 
     closeModal() {
-        console.log("close modal called");
         this.setState({lastClicked: null})
     }
 
     render() {
-        console.log("Updating the rendition of calendar");
         let scheduleIdMap = {};
         let calendars = [];
         for (let item of this.props.courses) {
@@ -318,6 +316,113 @@ class SubjectPriorityForm extends React.Component {
 
 }
 
+
+class TimeFormEntry extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.onInputChange = this.onInputChange.bind(this);
+        this.onDeleteForm = this.onDeleteForm.bind(this);
+    }
+
+    onInputChange(event) {
+        this.props.setTimeslot(this.props.id, event.target.value)
+    }
+
+    onDeleteForm(event) {
+        event.preventDefault();
+        this.props.removeTimeForm(this.props.id)
+    }
+
+    render() {
+        return (
+            <fieldset>
+                Time: <input type="text" onChange={this.onInputChange} value={this.props.value}/> <a href="#"
+                                                                                                     onClick={this.onDeleteForm}>Remove</a>
+            </fieldset>
+        )
+    }
+
+}
+
+
+class AvailableTimeForm extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            currentId: 6,
+            timeslots: {
+                1: "MONDAY 00:00-24:00",
+                2: "TUESDAY 00:00-24:00",
+                3: "WEDNESDAY 00:00-24:00",
+                4: "THURSDAY 00:00-24:00",
+                5: "FRIDAY 00:00-24:00"
+            }
+        };
+
+        this.setTimeslot = this.setTimeslot.bind(this);
+        this.removeTimeForm = this.removeTimeForm.bind(this);
+        this.addTimeSlotEntry = this.addTimeSlotEntry.bind(this);
+        this.updateMetric(this.state.timeslots);
+    }
+
+    setTimeslot(id, slot) {
+        let new_slots = Object.assign({}, this.state.timeslots);
+        new_slots[id] = slot;
+        this.setState({timeslots: new_slots});
+        this.updateMetric(new_slots);
+    }
+
+    removeTimeForm(id) {
+        let new_slots = Object.assign({}, this.state.timeslots);
+        delete new_slots[id];
+        this.setState({timeslots: new_slots});
+        this.updateMetric(new_slots);
+    }
+
+    addTimeSlotEntry(event) {
+        event.preventDefault();
+        let new_slots = Object.assign({}, this.state.timeslots);
+        new_slots[this.state.currentId] = "MONDAY 00:00-24:00";
+
+        this.setState({currentId: this.state.currentId + 1, timeslots: new_slots})
+    }
+
+    updateMetric(timeslots) {
+        console.log("Update Metric Called on:");
+        console.log(timeslots);
+        let slot_map = {};
+        for (let id in timeslots) {
+            let slot = timeslots[id];
+            let parts = slot.split(" ");
+            let day = parts[0];
+            if (!(day in slot_map)) {
+                slot_map[day] = [];
+            }
+
+            let timerange = parts[1].split("-");
+            let start_time = timerange[0].replace(":", "").padStart(4, "0");
+            let end_time = timerange[1].replace(":", "").padStart(4, "0");
+            slot_map[day].push({startTime: parseInt(start_time), endTime: parseInt(end_time)})
+        }
+        this.props.setMetric("allowedTimes", 1, slot_map);
+    }
+
+    render() {
+        return (
+            <div>
+                <a href="#" onClick={this.addTimeSlotEntry}>Add</a>
+                {Object.keys(this.state.timeslots).map((id) => <TimeFormEntry key={id} id={id}
+                                                                              setTimeslot={this.setTimeslot}
+                                                                              removeTimeForm={this.removeTimeForm}
+                                                                              value={this.state.timeslots[id]}/>)}
+            </div>
+        )
+    }
+
+}
+
 class CourseProfileForm extends React.Component {
 
     constructor(props) {
@@ -431,6 +536,18 @@ class CourseProfileForm extends React.Component {
                         <Accordion.Collapse eventKey="2">
                             <Card.Body>
                                 <SubjectPriorityForm courses={this.state.courses} setMetric={this.setMetric}/>
+                            </Card.Body>
+                        </Accordion.Collapse>
+                    </Card>
+                    <Card>
+                        <Card.Header>
+                            <Accordion.Toggle as={Button} variant="link" eventKey="3">
+                                Available Times
+                            </Accordion.Toggle>
+                        </Card.Header>
+                        <Accordion.Collapse eventKey="3">
+                            <Card.Body>
+                                <AvailableTimeForm setMetric={this.setMetric}/>
                             </Card.Body>
                         </Accordion.Collapse>
                     </Card>

@@ -7,10 +7,7 @@ import net.viperfish.planner.core.Profile;
 import net.viperfish.planner.core.TimeRange;
 
 import java.time.DayOfWeek;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class AllowedConstraintGenerator implements ConstraintHandler {
 
@@ -24,7 +21,7 @@ public class AllowedConstraintGenerator implements ConstraintHandler {
         Map<DayOfWeek, Set<TimeRange>> allowedRanges = new HashMap<>();
 
         for (Map.Entry<String, Object> entry : allowedTimeMetrics.getDetails().entrySet()) {
-            Set<Map<String, Integer>> ranges = (Set<Map<String, Integer>>) entry.getValue();
+            Set<Map<String, Integer>> ranges = new HashSet<>((Collection<Map<String, Integer>>) entry.getValue());
             Set<TimeRange> allowedRg = new HashSet<>();
             for (Map<String, Integer> timeRangeObj : ranges) {
                 int startTime = timeRangeObj.get("startTime");
@@ -41,6 +38,7 @@ public class AllowedConstraintGenerator implements ConstraintHandler {
                 Constraint c = new AllowedClassTimeConstraint(vName, e.getValue(), e.getKey());
                 csp.addConstraint(c);
             }
+            csp.addConstraint(new AllowedClassDayConstraint(vName, allowedRanges.keySet()));
         }
     }
 }
