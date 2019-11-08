@@ -9,10 +9,7 @@ import net.viperfish.planner.core.*;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
@@ -36,13 +33,15 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
     @Override
     public Schedule plan(Profile profile) {
         int maxTries = 10;
+        Set<Semester> failed = new HashSet<>();
         for (int i = 0; i < maxTries; ++i) {
-            Semester semester = planSemester(profile);
+            Semester semester = planSemester(profile, failed);
             if (semester != null) {
                 Schedule schedule = generateSchedule(profile, semester);
                 if (schedule != null) {
                     return schedule;
                 }
+                failed.add(semester);
             }
         }
         return Schedule.NULL_SCHEDULE;
@@ -53,13 +52,13 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
         return null;
     }
 
-    private Semester planSemester(Profile profile) {
+    private Semester planSemester(Profile profile, Set<Semester> failed) {
         Randomizer rand = new SemesterRandomizer(profile.getPortfolio());
         LocalSearch semesterPlanner = new RandomRestartHillClimb(new SteepAscentHillClimbSearch(3), rand, 100);
 
         Map<String, Double> scale = extractScales(profile);
         Map<String, UtilityFunction> utils = generateUtilityFunctions(profile);
-        CompositeObjectiveFunction objectiveFunction = new CompositeObjectiveFunction(utils, scale);
+        CompositeObjectiveFunction objectiveFunction = new CompositeObjectiveFunction(utils, scale, failed);
 
         Semester result = (Semester) semesterPlanner.solve(rand.randomState(1), objectiveFunction, objectiveFunction);
         return result;
