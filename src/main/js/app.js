@@ -3,6 +3,8 @@ import Card from 'react-bootstrap/Card'
 import Button from "react-bootstrap/Button";
 import Calendar from "@toast-ui/react-calendar";
 import Modal from "react-bootstrap/Modal";
+import InputGroup from "react-bootstrap/InputGroup";
+import Form from "react-bootstrap/Form";
 
 const React = require('react');
 const ReactDOM = require('react-dom');
@@ -217,10 +219,19 @@ class CourseProfileFormEntry extends React.Component {
 
     render() {
         return (
-            <fieldset>
-                Course: <input type="text" onChange={this.onInputChange}/>
-                <a onClick={this.onDelete} href="#">remove</a>
-            </fieldset>
+            <Form.Group controlId={"courseForm" + this.props.id}>
+                <InputGroup>
+                    <Form.Control
+                        placeholder="ex. DEPT 101"
+                        aria-label="Course Department and Number"
+                        aria-describedby="basic-addon2"
+                        onChange={this.onInputChange}
+                    />
+                    <InputGroup.Append>
+                        <Button variant="outline-danger" href="#" onClick={this.onDelete}>Remove</Button>
+                    </InputGroup.Append>
+                </InputGroup>
+            </Form.Group>
         );
     }
 
@@ -239,9 +250,13 @@ class CourseCreditForm extends React.Component {
 
     render() {
         return (
-            <fieldset>
-                Target Credit Hours: <input type="text" onChange={this.onInputChange}/>
-            </fieldset>
+            <Form.Group>
+                <Form.Label>Target Credit Hours</Form.Label>
+                <Form.Control placeholder="ex. 14" onChange={this.onInputChange}/>
+                <Form.Text className="text-muted">
+                    The planner will try to match this, but it might not be possible to be exact
+                </Form.Text>
+            </Form.Group>
         );
     }
 
@@ -261,9 +276,10 @@ class SubjectPriorityEntry extends React.Component {
 
     render() {
         return (
-            <fieldset>
-                {this.props.subject}: <input type="text" onChange={this.onFormChange}/>
-            </fieldset>
+            <Form.Group controlId={"priority" + this.props.subject}>
+                <Form.Label>{this.props.subject} Priority</Form.Label>
+                <Form.Control placeholder={"Priority, the higher the more important"} onChange={this.onFormChange}/>
+            </Form.Group>
         )
     }
 
@@ -323,10 +339,15 @@ class TimeFormEntry extends React.Component {
         super(props);
         this.onInputChange = this.onInputChange.bind(this);
         this.onDeleteForm = this.onDeleteForm.bind(this);
+        this.onDayChange = this.onDayChange.bind(this);
     }
 
     onInputChange(event) {
         this.props.setTimeslot(this.props.id, event.target.value)
+    }
+
+    onDayChange(event) {
+        this.props.setDaySlot(this.props.id, event.target.value)
     }
 
     onDeleteForm(event) {
@@ -336,10 +357,23 @@ class TimeFormEntry extends React.Component {
 
     render() {
         return (
-            <fieldset>
-                Time: <input type="text" onChange={this.onInputChange} value={this.props.value}/> <a href="#"
-                                                                                                     onClick={this.onDeleteForm}>Remove</a>
-            </fieldset>
+            <Form.Group controlId={"timeForm" + this.props.id}>
+                <InputGroup>
+                    <select value={this.props.day} onChange={this.onDayChange}>
+                        <option value="MONDAY">Monday</option>
+                        <option value="TUESDAY">Tuesday</option>
+                        <option value="WEDNESDAY">Wednesday</option>
+                        <option value="THURSDAY">Thursday</option>
+                        <option value="FRIDAY">Friday</option>
+                        <option value="SATURDAY">Saturday</option>
+                        <option value="SUNDAY">Sunday</option>
+                    </select>
+                    <Form.Control value={this.props.time} onChange={this.onInputChange}/>
+                    <InputGroup.Append>
+                        <Button variant="outline-danger" href="#" onClick={this.onDeleteForm}>Remove</Button>
+                    </InputGroup.Append>
+                </InputGroup>
+            </Form.Group>
         )
     }
 
@@ -353,57 +387,76 @@ class AvailableTimeForm extends React.Component {
         this.state = {
             currentId: 6,
             timeslots: {
-                1: "MONDAY 00:00-24:00",
-                2: "TUESDAY 00:00-24:00",
-                3: "WEDNESDAY 00:00-24:00",
-                4: "THURSDAY 00:00-24:00",
-                5: "FRIDAY 00:00-24:00"
+                1: "00:00-24:00",
+                2: "00:00-24:00",
+                3: "00:00-24:00",
+                4: "00:00-24:00",
+                5: "00:00-24:00"
+            },
+            dayslots: {
+                1: "MONDAY",
+                2: "TUESDAY",
+                3: "WEDNESDAY",
+                4: "THURSDAY",
+                5: "FRIDAY"
             }
         };
 
         this.setTimeslot = this.setTimeslot.bind(this);
         this.removeTimeForm = this.removeTimeForm.bind(this);
         this.addTimeSlotEntry = this.addTimeSlotEntry.bind(this);
-        this.updateMetric(this.state.timeslots);
+        this.setDaySlot = this.setDaySlot.bind(this);
+        this.updateMetric(this.state.timeslots, this.state.dayslots);
     }
 
     setTimeslot(id, slot) {
         let new_slots = Object.assign({}, this.state.timeslots);
         new_slots[id] = slot;
         this.setState({timeslots: new_slots});
-        this.updateMetric(new_slots);
+        this.updateMetric(new_slots, this.state.dayslots);
+    }
+
+    setDaySlot(id, slot) {
+        let new_slots = Object.assign({}, this.state.dayslots);
+        new_slots[id] = slot;
+        this.setState({dayslots: new_slots});
+        this.updateMetric(this.state.timeslots, new_slots);
     }
 
     removeTimeForm(id) {
-        let new_slots = Object.assign({}, this.state.timeslots);
-        delete new_slots[id];
-        this.setState({timeslots: new_slots});
-        this.updateMetric(new_slots);
+        let new_timeslots = Object.assign({}, this.state.timeslots);
+        delete new_timeslots[id];
+        let new_dayslots = Object.assign({}, this.state.dayslots);
+        delete new_dayslots[id];
+        this.setState({timeslots: new_timeslots, dayslots: new_dayslots});
+        this.updateMetric(new_timeslots, new_dayslots);
     }
 
     addTimeSlotEntry(event) {
         event.preventDefault();
-        let new_slots = Object.assign({}, this.state.timeslots);
-        new_slots[this.state.currentId] = "MONDAY 00:00-24:00";
+        let new_timeslots = Object.assign({}, this.state.timeslots);
+        let new_dayslots = Object.assign({}, this.state.dayslots);
 
-        this.setState({currentId: this.state.currentId + 1, timeslots: new_slots})
+        new_timeslots[this.state.currentId] = "00:00-24:00";
+        new_dayslots[this.state.currentId] = "MONDAY";
+
+        this.setState({currentId: this.state.currentId + 1, timeslots: new_timeslots, dayslots: new_dayslots})
     }
 
-    updateMetric(timeslots) {
-        console.log("Update Metric Called on:");
-        console.log(timeslots);
+    updateMetric(timeslots, dayslots) {
         let slot_map = {};
-        for (let id in timeslots) {
-            let slot = timeslots[id];
-            let parts = slot.split(" ");
-            let day = parts[0];
+        for (let id in dayslots) {
+            let day = dayslots[id];
             if (!(day in slot_map)) {
                 slot_map[day] = [];
             }
 
-            let timerange = parts[1].split("-");
+            let timerange = timeslots[id].split("-");
             let start_time = timerange[0].replace(":", "").padStart(4, "0");
             let end_time = timerange[1].replace(":", "").padStart(4, "0");
+
+            start_time = start_time.replace(" ", "");
+            end_time = end_time.replace(" ", "");
             slot_map[day].push({startTime: parseInt(start_time), endTime: parseInt(end_time)})
         }
         this.props.setMetric("allowedTimes", 1, slot_map);
@@ -412,11 +465,13 @@ class AvailableTimeForm extends React.Component {
     render() {
         return (
             <div>
-                <a href="#" onClick={this.addTimeSlotEntry}>Add</a>
                 {Object.keys(this.state.timeslots).map((id) => <TimeFormEntry key={id} id={id}
                                                                               setTimeslot={this.setTimeslot}
+                                                                              setDaySlot={this.setDaySlot}
                                                                               removeTimeForm={this.removeTimeForm}
-                                                                              value={this.state.timeslots[id]}/>)}
+                                                                              time={this.state.timeslots[id]}
+                                                                              day={this.state.dayslots[id]}/>)}
+                <Button href="#" onClick={this.addTimeSlotEntry} variant="success">Add</Button>
             </div>
         )
     }
@@ -499,60 +554,63 @@ class CourseProfileForm extends React.Component {
     render() {
         return (
             <div>
-                <Accordion defaultActiveKey="0">
-                    <Card>
-                        <Card.Header>
-                            <Accordion.Toggle as={Button} variant="link" eventKey="0">
-                                Courses
-                            </Accordion.Toggle>
-                        </Card.Header>
-                        <Accordion.Collapse eventKey="0">
-                            <Card.Body>
-                                <a href="#" onClick={this.addCourseFormEntry}>new</a>
-                                {Object.keys(this.state.courses).map((id) => <CourseProfileFormEntry key={id} id={id}
-                                                                                                     setCourse={this.setCourse}
-                                                                                                     removeCourseForm={this.removeCourseForm}/>)}
-                            </Card.Body>
-                        </Accordion.Collapse>
-                    </Card>
-                    <Card>
-                        <Card.Header>
-                            <Accordion.Toggle as={Button} variant="link" eventKey="1">
-                                Credit Hours
-                            </Accordion.Toggle>
-                        </Card.Header>
-                        <Accordion.Collapse eventKey="1">
-                            <Card.Body>
-                                <CourseCreditForm setMetric={this.setMetric}/>
-                            </Card.Body>
-                        </Accordion.Collapse>
-                    </Card>
-                    <Card>
-                        <Card.Header>
-                            <Accordion.Toggle as={Button} variant="link" eventKey="2">
-                                Subject Priorities
-                            </Accordion.Toggle>
-                        </Card.Header>
-                        <Accordion.Collapse eventKey="2">
-                            <Card.Body>
-                                <SubjectPriorityForm courses={this.state.courses} setMetric={this.setMetric}/>
-                            </Card.Body>
-                        </Accordion.Collapse>
-                    </Card>
-                    <Card>
-                        <Card.Header>
-                            <Accordion.Toggle as={Button} variant="link" eventKey="3">
-                                Available Times
-                            </Accordion.Toggle>
-                        </Card.Header>
-                        <Accordion.Collapse eventKey="3">
-                            <Card.Body>
-                                <AvailableTimeForm setMetric={this.setMetric}/>
-                            </Card.Body>
-                        </Accordion.Collapse>
-                    </Card>
-                </Accordion>
-                <a href="#" onClick={this.onSubmitInput}>Submit</a>
+                <Form>
+                    <Accordion defaultActiveKey="0">
+                        <Card>
+                            <Card.Header>
+                                <Accordion.Toggle as={Button} variant="link" eventKey="0">
+                                    Courses
+                                </Accordion.Toggle>
+                            </Card.Header>
+                            <Accordion.Collapse eventKey="0">
+                                <Card.Body>
+                                    {Object.keys(this.state.courses).map((id) => <CourseProfileFormEntry key={id}
+                                                                                                         id={id}
+                                                                                                         setCourse={this.setCourse}
+                                                                                                         removeCourseForm={this.removeCourseForm}/>)}
+                                    <Button href="#" onClick={this.addCourseFormEntry} variant="success">New</Button>
+                                </Card.Body>
+                            </Accordion.Collapse>
+                        </Card>
+                        <Card>
+                            <Card.Header>
+                                <Accordion.Toggle as={Button} variant="link" eventKey="1">
+                                    Credit Hours
+                                </Accordion.Toggle>
+                            </Card.Header>
+                            <Accordion.Collapse eventKey="1">
+                                <Card.Body>
+                                    <CourseCreditForm setMetric={this.setMetric}/>
+                                </Card.Body>
+                            </Accordion.Collapse>
+                        </Card>
+                        <Card>
+                            <Card.Header>
+                                <Accordion.Toggle as={Button} variant="link" eventKey="2">
+                                    Subject Priorities
+                                </Accordion.Toggle>
+                            </Card.Header>
+                            <Accordion.Collapse eventKey="2">
+                                <Card.Body>
+                                    <SubjectPriorityForm courses={this.state.courses} setMetric={this.setMetric}/>
+                                </Card.Body>
+                            </Accordion.Collapse>
+                        </Card>
+                        <Card>
+                            <Card.Header>
+                                <Accordion.Toggle as={Button} variant="link" eventKey="3">
+                                    Available Times
+                                </Accordion.Toggle>
+                            </Card.Header>
+                            <Accordion.Collapse eventKey="3">
+                                <Card.Body>
+                                    <AvailableTimeForm setMetric={this.setMetric}/>
+                                </Card.Body>
+                            </Accordion.Collapse>
+                        </Card>
+                    </Accordion>
+                    <Button href="#" onClick={this.onSubmitInput} variant="primary">Submit</Button>
+                </Form>
             </div>
         );
     }
