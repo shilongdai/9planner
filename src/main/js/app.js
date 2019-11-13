@@ -1,10 +1,13 @@
 import Accordion from 'react-bootstrap/Accordion';
 import Card from 'react-bootstrap/Card'
 import Button from "react-bootstrap/Button";
-import Calendar from "@toast-ui/react-calendar";
 import Modal from "react-bootstrap/Modal";
 import InputGroup from "react-bootstrap/InputGroup";
 import Form from "react-bootstrap/Form";
+
+import {Calendar, momentLocalizer, Views} from 'react-big-calendar'
+import moment from 'moment'
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const React = require('react');
 const ReactDOM = require('react-dom');
@@ -14,6 +17,7 @@ const mime = require('rest/interceptor/mime');
 const defaultRequest = require('rest/interceptor/defaultRequest');
 const errorCode = require('rest/interceptor/errorCode');
 const client = rest.wrap(mime).wrap(errorCode).wrap(defaultRequest, {headers: {'Accept': 'application/json'}});
+const localizer = momentLocalizer(moment);
 
 
 const WEEK_MAP = {
@@ -125,16 +129,6 @@ class ScheduleSectionsDisplay extends React.Component {
 
     render() {
         let scheduleIdMap = {};
-        let calendars = [];
-        for (let item of this.props.courses) {
-            let calColor = getRandomColor();
-            calendars.push({
-                id: item.id.toString(),
-                name: item.subject + item.courseNumber.toString(),
-                bgColor: calColor,
-                borderColor: calColor,
-            });
-        }
         let schedules = [];
         let currentScheduleId = 0;
         let sectionMap = {};
@@ -144,12 +138,10 @@ class ScheduleSectionsDisplay extends React.Component {
             for (let timeframe of duration) {
                 scheduleIdMap[currentScheduleId] = item.id;
                 schedules.push({
-                    id: (currentScheduleId++).toString(),
-                    calendarId: item.archtype.id.toString(),
                     title: item.archtype.subject + item.archtype.courseNumber + "-" + item.section,
-                    category: "time",
-                    start: timeframe.start.toISOString(),
-                    end: timeframe.end.toISOString(),
+                    start: timeframe.start,
+                    end: timeframe.end,
+                    allDay: false
                 });
             }
         }
@@ -160,10 +152,15 @@ class ScheduleSectionsDisplay extends React.Component {
         }
         return (
             <>
-                <Calendar usageStatistics={false} defaultView={"week"} disableDblClick={true} disableClick={true}
-                          isReadOnly={true} taskView={false} scheduleView={true} useDetailPopup={false}
-                          calendars={calendars}
-                          schedules={schedules} onClickSchedule={this.displaySection}/>
+                <Calendar
+                    events={schedules}
+                    view={Views.WEEK}
+                    localizer={localizer}
+                    onView={(event) => {
+                    }}
+                    views={[Views.WEEK]}
+                    toolbar={false}
+                />
 
                 <CourseDisplayModal closeModal={this.closeModal} course={modalCourse} blacklist={this.props.blacklist}/>
             </>
@@ -661,6 +658,7 @@ class NinePlannerApp extends React.Component {
         return (
             <div>
                 <CourseProfileForm setProfile={this.setProfile}/>
+                <br/>
                 <ScheduleResultDisplay schedule={this.state.schedule} blacklist={this.blacklist}/>
             </div>
         );
