@@ -203,10 +203,38 @@ class CourseProfileFormEntry extends React.Component {
         super(props);
         this.onInputChange = this.onInputChange.bind(this);
         this.onDelete = this.onDelete.bind(this);
+        this.state = {error: null};
     }
 
+
     onInputChange(event) {
-        this.props.setCourse(this.props.id, event.target.value);
+        let course = event.target.value;
+        let course_name = course.split(" ");
+        if (course.trim().length === 0) {
+            this.setState({error: null});
+            this.props.setCourse(this.props.id, null);
+            return;
+        }
+        if (course_name.length !== 2) {
+            this.setState({error: "Please Enter a Course in the Specified Format"});
+            this.props.setCourse(this.props.id, null);
+            return;
+        }
+        let subject = course_name[0];
+        let courseNumber = course_name[1];
+        let self = this;
+        client(
+            {
+                method: "GET",
+                path: `/api/course/${subject}/${courseNumber}`
+            }
+        ).then(function (response) {
+            self.props.setCourse(self.props.id, course);
+            self.setState({error: null});
+        }, function (response) {
+            self.setState({error: "Please Enter a Course in the Specified Format"});
+            self.props.setCourse(self.props.id, null);
+        });
     }
 
     onDelete(event) {
@@ -223,10 +251,15 @@ class CourseProfileFormEntry extends React.Component {
                         aria-label="Course Department and Number"
                         aria-describedby="basic-addon2"
                         onChange={this.onInputChange}
+                        isInvalid={!!this.state.error}
                     />
                     <InputGroup.Append>
                         <Button variant="outline-danger" href="#" onClick={this.onDelete}>Remove</Button>
                     </InputGroup.Append>
+
+                    <Form.Control.Feedback type="invalid">
+                        {this.state.error}
+                    </Form.Control.Feedback>
                 </InputGroup>
             </Form.Group>
         );
@@ -495,7 +528,11 @@ class CourseProfileForm extends React.Component {
 
     setCourse(id, course) {
         let new_courses = Object.assign({}, this.state.courses);
-        new_courses[id] = course;
+        if (course != null) {
+            new_courses[id] = course;
+        } else {
+            new_courses[id] = "";
+        }
         this.setState({courses: new_courses});
     }
 
@@ -526,8 +563,13 @@ class CourseProfileForm extends React.Component {
         e.preventDefault();
         let scheduleCourses = [];
         let self = this;
+        let null_course = 0;
         for (let id in this.state.courses) {
             let name = this.state.courses[id];
+            if (name === "") {
+                null_course += 1;
+                continue;
+            }
             let subject = name.split(" ")[0];
             let courseNumber = name.split(" ")[1];
             client(
@@ -537,7 +579,7 @@ class CourseProfileForm extends React.Component {
                 }
             ).then(function (response) {
                 scheduleCourses.push(response.entity.id);
-                if (scheduleCourses.length === Object.keys(self.state.courses).length) {
+                if (scheduleCourses.length === (Object.keys(self.state.courses).length - null_course)) {
                     self.props.setProfile({
                         blacklist: [],
                         metrics: self.state.metrics,
