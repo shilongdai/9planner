@@ -74,6 +74,11 @@ function getRandomColor() {
 }
 
 
+function isNumeric(value) {
+    return /^-{0,1}\d+$/.test(value);
+}
+
+
 class CourseDisplayModal extends React.Component {
 
     constructor(props) {
@@ -271,21 +276,35 @@ class CourseCreditForm extends React.Component {
 
     constructor(props) {
         super(props);
-        this.onInputChange = this.onInputChange.bind(this)
+        this.onInputChange = this.onInputChange.bind(this);
+        this.state = {error: null};
     }
 
     onInputChange(event) {
-        this.props.setMetric("creditHour", 1, {targetUnits: event.target.value})
+        let value = event.target.value;
+        if (value.trim().length === 0) {
+            this.setState({error: "This is required"});
+            return;
+        }
+        if (isNumeric(value)) {
+            this.setState({error: null});
+            this.props.setMetric("creditHour", 1, {targetUnits: event.target.value})
+        } else {
+            this.setState({error: "Please enter an integer"});
+        }
     }
 
     render() {
         return (
             <Form.Group>
                 <Form.Label>Target Credit Hours</Form.Label>
-                <Form.Control placeholder="ex. 14" onChange={this.onInputChange}/>
+                <Form.Control placeholder="ex. 14" onChange={this.onInputChange} isInvalid={!!this.state.error}/>
                 <Form.Text className="text-muted">
                     The planner will try to match this, but it might not be possible to be exact
                 </Form.Text>
+                <Form.Control.Feedback type="invalid">
+                    {this.state.error}
+                </Form.Control.Feedback>
             </Form.Group>
         );
     }
