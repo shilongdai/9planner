@@ -316,18 +316,34 @@ class SubjectPriorityEntry extends React.Component {
     constructor(props) {
         super(props);
         this.onFormChange = this.onFormChange.bind(this);
+        this.state = {error: null}
     }
 
 
     onFormChange(event) {
-        this.props.updateMetric(this.props.subject, event.target.value)
+        let value = event.target.value;
+        if (value.trim().length === 0) {
+            this.setState({error: null});
+            this.props.updateMetric(this.props.subject, 1);
+            return;
+        }
+        if (isNumeric(value)) {
+            this.setState({error: null});
+            this.props.updateMetric(this.props.subject, event.target.value)
+        } else {
+            this.setState({error: "Please provide an integer as the priority"});
+        }
     }
 
     render() {
         return (
             <Form.Group controlId={"priority" + this.props.subject}>
                 <Form.Label>{this.props.subject} Priority</Form.Label>
-                <Form.Control placeholder={"Priority, the higher the more important"} onChange={this.onFormChange}/>
+                <Form.Control placeholder={"Priority, the higher the more important"} onChange={this.onFormChange}
+                              isInvalid={!!this.state.error}/>
+                <Form.Control.Feedback type="invalid">
+                    {this.state.error}
+                </Form.Control.Feedback>
             </Form.Group>
         )
     }
