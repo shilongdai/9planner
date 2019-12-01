@@ -283,7 +283,8 @@ class CourseCreditForm extends React.Component {
     onInputChange(event) {
         let value = event.target.value;
         if (value.trim().length === 0) {
-            this.setState({error: "This is required"});
+            this.setState({error: null});
+            this.props.setMetric("creditHour", 1, {targetUnits: 0});
             return;
         }
         if (isNumeric(value)) {
@@ -298,7 +299,7 @@ class CourseCreditForm extends React.Component {
         return (
             <Form.Group>
                 <Form.Label>Target Credit Hours</Form.Label>
-                <Form.Control placeholder="ex. 14" onChange={this.onInputChange} isInvalid={!!this.state.error}/>
+                <Form.Control placeholder="0" onChange={this.onInputChange} isInvalid={!!this.state.error}/>
                 <Form.Text className="text-muted">
                     The planner will try to match this, but it might not be possible to be exact
                 </Form.Text>
@@ -405,10 +406,23 @@ class TimeFormEntry extends React.Component {
         this.onInputChange = this.onInputChange.bind(this);
         this.onDeleteForm = this.onDeleteForm.bind(this);
         this.onDayChange = this.onDayChange.bind(this);
+        this.state = {error: null}
     }
 
     onInputChange(event) {
-        this.props.setTimeslot(this.props.id, event.target.value)
+        let value = event.target.value;
+        if (value.trim().length !== 0) {
+            if (!this.isTimeRange(value)) {
+                this.setState({error: "Please enter a valid time range"});
+                this.props.setTimeslot(this.props.id, "");
+                return;
+            }
+            this.props.setTimeslot(this.props.id, event.target.value);
+            this.setState({error: null})
+        } else {
+            this.props.setTimeslot(this.props.id, "");
+            this.setState({error: null})
+        }
     }
 
     onDayChange(event) {
@@ -418,6 +432,19 @@ class TimeFormEntry extends React.Component {
     onDeleteForm(event) {
         event.preventDefault();
         this.props.removeTimeForm(this.props.id)
+    }
+
+    isTimeRange(value) {
+        if (!value.includes("-")) {
+            return false;
+        }
+        let timerange = value.split("-");
+        if (timerange.length !== 2) {
+            return false
+        }
+        let start_time = timerange[0].replace(":", "").padStart(4, "0");
+        let end_time = timerange[1].replace(":", "").padStart(4, "0");
+        return isNumeric(start_time) && isNumeric(end_time);
     }
 
     render() {
@@ -433,10 +460,13 @@ class TimeFormEntry extends React.Component {
                         <option value="SATURDAY">Saturday</option>
                         <option value="SUNDAY">Sunday</option>
                     </select>
-                    <Form.Control value={this.props.time} onChange={this.onInputChange}/>
+                    <Form.Control value={this.props.time} onChange={this.onInputChange} isInvalid={!!this.state.error}/>
                     <InputGroup.Append>
                         <Button variant="outline-danger" href="#" onClick={this.onDeleteForm}>Remove</Button>
                     </InputGroup.Append>
+                    <Form.Control.Feedback type="invalid">
+                        {this.state.error}
+                    </Form.Control.Feedback>
                 </InputGroup>
             </Form.Group>
         )
@@ -511,11 +541,14 @@ class AvailableTimeForm extends React.Component {
     updateMetric(timeslots, dayslots) {
         let slot_map = {};
         for (let id in dayslots) {
+            if (timeslots[id].trim().length === 0) {
+                continue;
+            }
+
             let day = dayslots[id];
             if (!(day in slot_map)) {
                 slot_map[day] = [];
             }
-
             let timerange = timeslots[id].split("-");
             let start_time = timerange[0].replace(":", "").padStart(4, "0");
             let end_time = timerange[1].replace(":", "").padStart(4, "0");
