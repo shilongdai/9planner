@@ -209,6 +209,7 @@ class CourseProfileFormEntry extends React.Component {
         this.onInputChange = this.onInputChange.bind(this);
         this.onDelete = this.onDelete.bind(this);
         this.state = {error: null};
+        this.name = "CourseProfileFormEntry" + this.props.id
     }
 
 
@@ -218,11 +219,13 @@ class CourseProfileFormEntry extends React.Component {
         if (course.trim().length === 0) {
             this.setState({error: null});
             this.props.setCourse(this.props.id, null);
+            this.props.setFormError(this.name, false);
             return;
         }
         if (course_name.length !== 2) {
             this.setState({error: "Please Enter a Course in the Specified Format"});
             this.props.setCourse(this.props.id, null);
+            this.props.setFormError(this.name, true);
             return;
         }
         let subject = course_name[0];
@@ -236,9 +239,11 @@ class CourseProfileFormEntry extends React.Component {
         ).then(function (response) {
             self.props.setCourse(self.props.id, course);
             self.setState({error: null});
+            self.props.setFormError(self.name, false);
         }, function (response) {
             self.setState({error: "Please Enter a Course in the Specified Format"});
             self.props.setCourse(self.props.id, null);
+            self.props.setFormError(self.name, true);
         });
     }
 
@@ -278,6 +283,7 @@ class CourseCreditForm extends React.Component {
         super(props);
         this.onInputChange = this.onInputChange.bind(this);
         this.state = {error: null};
+        this.name = "CourseCreditForm";
     }
 
     onInputChange(event) {
@@ -285,13 +291,16 @@ class CourseCreditForm extends React.Component {
         if (value.trim().length === 0) {
             this.setState({error: null});
             this.props.setMetric("creditHour", 1, {targetUnits: 0});
+            this.props.setFormError(this.name, false);
             return;
         }
         if (isNumeric(value)) {
             this.setState({error: null});
-            this.props.setMetric("creditHour", 1, {targetUnits: event.target.value})
+            this.props.setMetric("creditHour", 1, {targetUnits: event.target.value});
+            this.props.setFormError(this.name, false);
         } else {
             this.setState({error: "Please enter an integer"});
+            this.props.setFormError(this.name, true);
         }
     }
 
@@ -317,7 +326,8 @@ class SubjectPriorityEntry extends React.Component {
     constructor(props) {
         super(props);
         this.onFormChange = this.onFormChange.bind(this);
-        this.state = {error: null}
+        this.state = {error: null};
+        this.name = "SubjectPriorityEntry" + this.props.subject;
     }
 
 
@@ -326,13 +336,16 @@ class SubjectPriorityEntry extends React.Component {
         if (value.trim().length === 0) {
             this.setState({error: null});
             this.props.updateMetric(this.props.subject, 1);
+            this.props.setFormError(this.name, false);
             return;
         }
         if (isNumeric(value)) {
             this.setState({error: null});
-            this.props.updateMetric(this.props.subject, event.target.value)
+            this.props.updateMetric(this.props.subject, event.target.value);
+            this.props.setFormError(this.name, false);
         } else {
             this.setState({error: "Please provide an integer as the priority"});
+            this.props.setFormError(this.name, true);
         }
     }
 
@@ -391,7 +404,8 @@ class SubjectPriorityForm extends React.Component {
         return (
             <div>
                 {Object.keys(this.subjects).map((subject) => <SubjectPriorityEntry key={subject} subject={subject}
-                                                                                   updateMetric={this.updateMetric}/>)}
+                                                                                   updateMetric={this.updateMetric}
+                                                                                   setFormError={this.props.setFormError}/>)}
             </div>
         )
     }
@@ -406,22 +420,27 @@ class TimeFormEntry extends React.Component {
         this.onInputChange = this.onInputChange.bind(this);
         this.onDeleteForm = this.onDeleteForm.bind(this);
         this.onDayChange = this.onDayChange.bind(this);
-        this.state = {error: null}
+        this.state = {error: null, time_str: props.time};
+        this.name = "TimeFormEntry" + this.props.id;
     }
 
     onInputChange(event) {
         let value = event.target.value;
+        this.setState({time_str: value});
         if (value.trim().length !== 0) {
             if (!this.isTimeRange(value)) {
                 this.setState({error: "Please enter a valid time range"});
                 this.props.setTimeslot(this.props.id, "");
+                this.props.setFormError(this.name, true);
                 return;
             }
             this.props.setTimeslot(this.props.id, event.target.value);
-            this.setState({error: null})
+            this.setState({error: null});
+            this.props.setFormError(this.name, false);
         } else {
             this.props.setTimeslot(this.props.id, "");
-            this.setState({error: null})
+            this.setState({error: null});
+            this.props.setFormError(this.name, false);
         }
     }
 
@@ -460,7 +479,8 @@ class TimeFormEntry extends React.Component {
                         <option value="SATURDAY">Saturday</option>
                         <option value="SUNDAY">Sunday</option>
                     </select>
-                    <Form.Control value={this.props.time} onChange={this.onInputChange} isInvalid={!!this.state.error}/>
+                    <Form.Control value={this.state.time_str} onChange={this.onInputChange}
+                                  isInvalid={!!this.state.error}/>
                     <InputGroup.Append>
                         <Button variant="outline-danger" href="#" onClick={this.onDeleteForm}>Remove</Button>
                     </InputGroup.Append>
@@ -568,7 +588,9 @@ class AvailableTimeForm extends React.Component {
                                                                               setDaySlot={this.setDaySlot}
                                                                               removeTimeForm={this.removeTimeForm}
                                                                               time={this.state.timeslots[id]}
-                                                                              day={this.state.dayslots[id]}/>)}
+                                                                              day={this.state.dayslots[id]}
+                                                                              setFormError={this.props.setFormError}
+                />)}
                 <Button href="#" onClick={this.addTimeSlotEntry} variant="success">Add</Button>
             </div>
         )
@@ -585,13 +607,15 @@ class CourseProfileForm extends React.Component {
             metrics: {},
             courses: {
                 1: ""
-            }
+            },
+            errors: {}
         };
         this.setCourse = this.setCourse.bind(this);
         this.removeCourseForm = this.removeCourseForm.bind(this);
         this.addCourseFormEntry = this.addCourseFormEntry.bind(this);
         this.onSubmitInput = this.onSubmitInput.bind(this);
         this.setMetric = this.setMetric.bind(this);
+        this.setFormError = this.setFormError.bind(this);
     }
 
     setCourse(id, course) {
@@ -627,8 +651,30 @@ class CourseProfileForm extends React.Component {
         this.setState({metrics: existing_metrics})
     }
 
+    setFormError(name, has_error) {
+        let existing_errors = Object.assign({}, this.state.errors);
+        existing_errors[name] = has_error;
+        this.setState({errors: existing_errors})
+    }
+
+    checkHasError() {
+        let has_error = false;
+        for (let key in this.state.errors) {
+            if (this.state.errors[key]) {
+                has_error = true;
+                break;
+            }
+        }
+        return has_error
+    }
+
+
     onSubmitInput(e) {
         e.preventDefault();
+        if (this.checkHasError()) {
+            return;
+        }
+
         let scheduleCourses = [];
         let self = this;
         let null_course = 0;
@@ -640,6 +686,8 @@ class CourseProfileForm extends React.Component {
             }
             let subject = name.split(" ")[0];
             let courseNumber = name.split(" ")[1];
+            console.log(this.state.errors);
+
             client(
                 {
                     method: "GET",
@@ -655,6 +703,20 @@ class CourseProfileForm extends React.Component {
                     })
                 }
             })
+        }
+    }
+
+    displayError() {
+        console.log(this.state.errors);
+        console.log(this.checkHasError());
+        if (this.checkHasError()) {
+            return (
+                <span> Please ensure that all forms are error-free</span>
+            )
+        } else {
+            return (
+                <span/>
+            )
         }
     }
 
@@ -674,7 +736,8 @@ class CourseProfileForm extends React.Component {
                                     {Object.keys(this.state.courses).map((id) => <CourseProfileFormEntry key={id}
                                                                                                          id={id}
                                                                                                          setCourse={this.setCourse}
-                                                                                                         removeCourseForm={this.removeCourseForm}/>)}
+                                                                                                         removeCourseForm={this.removeCourseForm}
+                                                                                                         setFormError={this.setFormError}/>)}
                                     <Button href="#" onClick={this.addCourseFormEntry} variant="success">New</Button>
                                 </Card.Body>
                             </Accordion.Collapse>
@@ -687,7 +750,7 @@ class CourseProfileForm extends React.Component {
                             </Card.Header>
                             <Accordion.Collapse eventKey="1">
                                 <Card.Body>
-                                    <CourseCreditForm setMetric={this.setMetric}/>
+                                    <CourseCreditForm setMetric={this.setMetric} setFormError={this.setFormError}/>
                                 </Card.Body>
                             </Accordion.Collapse>
                         </Card>
@@ -699,7 +762,8 @@ class CourseProfileForm extends React.Component {
                             </Card.Header>
                             <Accordion.Collapse eventKey="2">
                                 <Card.Body>
-                                    <SubjectPriorityForm courses={this.state.courses} setMetric={this.setMetric}/>
+                                    <SubjectPriorityForm courses={this.state.courses} setMetric={this.setMetric}
+                                                         setFormError={this.setFormError}/>
                                 </Card.Body>
                             </Accordion.Collapse>
                         </Card>
@@ -711,12 +775,14 @@ class CourseProfileForm extends React.Component {
                             </Card.Header>
                             <Accordion.Collapse eventKey="3">
                                 <Card.Body>
-                                    <AvailableTimeForm setMetric={this.setMetric}/>
+                                    <AvailableTimeForm setMetric={this.setMetric} setFormError={this.setFormError}/>
                                 </Card.Body>
                             </Accordion.Collapse>
                         </Card>
                     </Accordion>
-                    <Button href="#" onClick={this.onSubmitInput} variant="primary">Submit</Button>
+                    <br/>
+                    <Button href="#" onClick={this.onSubmitInput}
+                            variant="primary">Submit</Button> {this.displayError()}
                 </Form>
             </div>
         );
