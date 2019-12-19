@@ -8,6 +8,9 @@ import Form from "react-bootstrap/Form";
 import {Calendar, momentLocalizer, Views} from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 const React = require('react');
 const ReactDOM = require('react-dom');
@@ -118,13 +121,13 @@ class ScheduleSectionsDisplay extends React.Component {
     constructor(props) {
         super(props);
         this.state = {lastClicked: null};
-        this.displaySection = this.displaySchedule.bind(this);
+        this.displaySchedule = this.displaySchedule.bind(this);
         this.closeModal = this.closeModal.bind(this);
     }
 
-    displaySchedule(event) {
-        if (this.state.lastClicked !== event.schedule.id) {
-            this.setState({lastClicked: event.schedule.id})
+    displaySchedule(event, e) {
+        if (this.state.lastClicked !== event.id) {
+            this.setState({lastClicked: event.id})
         }
     }
 
@@ -133,27 +136,25 @@ class ScheduleSectionsDisplay extends React.Component {
     }
 
     render() {
-        let scheduleIdMap = {};
         let schedules = [];
-        let currentScheduleId = 0;
         let sectionMap = {};
         for (let item of this.props.sections) {
             let duration = getScheduleDuration(item);
             sectionMap[item.id] = item;
             for (let timeframe of duration) {
-                scheduleIdMap[currentScheduleId] = item.id;
                 schedules.push({
                     title: item.archtype.subject + item.archtype.courseNumber + "-" + item.section,
                     start: timeframe.start,
                     end: timeframe.end,
-                    allDay: false
+                    allDay: false,
+                    id: item.id
                 });
             }
         }
 
         let modalCourse = null;
         if (this.state.lastClicked != null) {
-            modalCourse = sectionMap[scheduleIdMap[this.state.lastClicked]];
+            modalCourse = sectionMap[this.state.lastClicked];
         }
         return (
             <>
@@ -165,6 +166,7 @@ class ScheduleSectionsDisplay extends React.Component {
                     }}
                     views={[Views.WEEK]}
                     toolbar={false}
+                    onSelectEvent={this.displaySchedule}
                 />
 
                 <CourseDisplayModal closeModal={this.closeModal} course={modalCourse} blacklist={this.props.blacklist}/>
@@ -191,11 +193,15 @@ class ScheduleResultDisplay extends React.Component {
             coursesSet.add(section.archtype.id);
             courses.push(section.archtype)
         }
+        let displayedCredit = 0;
+        if (this.props.schedule.totalCredit !== -1) {
+            displayedCredit = this.props.schedule.totalCredit;
+        }
         return (
             <div>
+                <p>Total Credits: {displayedCredit}</p>
                 <ScheduleSectionsDisplay courses={courses} sections={this.props.schedule.sections}
                                          blacklist={this.props.blacklist}/>
-                <p>Total Credits: {this.props.schedule.totalCredit}</p>
             </div>
         )
     }
@@ -707,8 +713,6 @@ class CourseProfileForm extends React.Component {
     }
 
     displayError() {
-        console.log(this.state.errors);
-        console.log(this.checkHasError());
         if (this.checkHasError()) {
             return (
                 <span> Please ensure that all forms are error-free</span>
@@ -832,11 +836,24 @@ class NinePlannerApp extends React.Component {
 
     render() {
         return (
-            <div>
-                <CourseProfileForm setProfile={this.setProfile}/>
+            <Container>
+                <Row>
+                    <Col>
+                        <h1>⑨Planner</h1>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <CourseProfileForm setProfile={this.setProfile}/>
+                    </Col>
+                </Row>
                 <br/>
-                <ScheduleResultDisplay schedule={this.state.schedule} blacklist={this.blacklist}/>
-            </div>
+                <Row>
+                    <Col>
+                        <ScheduleResultDisplay schedule={this.state.schedule} blacklist={this.blacklist}/>
+                    </Col>
+                </Row>
+            </Container>
         );
     }
 
