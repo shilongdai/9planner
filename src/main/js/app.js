@@ -11,6 +11,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import Table from "react-bootstrap/Table";
 
 const React = require('react');
 const ReactDOM = require('react-dom');
@@ -90,18 +91,66 @@ class CourseDisplayModal extends React.Component {
     }
 
     render() {
+        let name = "";
+        let credit = 0;
+        let building = "";
+        let room = "";
+        let instructor = "";
+        let subject = "";
+        let coursenum = 0;
+        let section = 0;
+
+        if (this.props.course != null) {
+            subject = this.props.course.archtype.subject;
+            coursenum = this.props.course.archtype.courseNumber;
+            section = this.props.course.section;
+            name = this.props.course.archtype.title;
+            credit = this.props.course.archtype.units;
+            building = this.props.course.building;
+            room = this.props.course.room;
+            instructor = this.props.course.instructor;
+        }
         return (
-            <Modal show={this.props.course != null} onHide={this.handleClose}>
+            <Modal show={this.props.course != null} onHide={this.props.closeModal}>
                 <Modal.Header closeButton>
-                    <Modal.Title>Remove Test</Modal.Title>
+                    <Modal.Title>{subject} {coursenum}-{section}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>Remove Test</Modal.Body>
+                <Modal.Body>
+                    <Table>
+                        <tbody>
+                        <tr>
+                            <td>Name</td>
+                            <td>{name}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Credit
+                            </td>
+                            <td>{credit}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Building
+                            </td>
+                            <td>{building}</td>
+                        </tr>
+                        <tr>
+                            <td>Room</td>
+                            <td>{room}</td>
+                        </tr>
+                        <tr>
+                            <td>Instructor</td>
+                            <td>{instructor}</td>
+                        </tr>
+                        </tbody>
+                    </Table>
+                </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={this.props.closeModal}>
                         Close
                     </Button>
                     <Button variant="danger" onClick={this.handleBlackList}>
-                        Remove
+                        Blacklist
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -199,9 +248,9 @@ class ScheduleResultDisplay extends React.Component {
         }
         return (
             <div>
-                <p>Total Credits: {displayedCredit}</p>
                 <ScheduleSectionsDisplay courses={courses} sections={this.props.schedule.sections}
                                          blacklist={this.props.blacklist}/>
+                <p>Total Credits: {displayedCredit}</p>
             </div>
         )
     }
@@ -692,7 +741,6 @@ class CourseProfileForm extends React.Component {
             }
             let subject = name.split(" ")[0];
             let courseNumber = name.split(" ")[1];
-            console.log(this.state.errors);
 
             client(
                 {
