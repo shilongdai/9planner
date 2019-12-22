@@ -12,6 +12,7 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Table from "react-bootstrap/Table";
+import ListGroup from "react-bootstrap/ListGroup";
 
 const React = require('react');
 const ReactDOM = require('react-dom');
@@ -83,11 +84,27 @@ function isNumeric(value) {
 }
 
 
+function timeNumToString(time) {
+    let padded = time.toString().padStart(4, '0');
+    return padded.slice(0, 2) + ":" + padded.slice(2, 4);
+}
+
+
+function daysToString(day_list) {
+    let result = "";
+    for (let day of day_list) {
+        result += day.toString().charAt(0).toUpperCase() + day.toString().slice(1).toLowerCase() + ", "
+    }
+    result = result.slice(0, result.length - 2);
+    return result
+}
+
+
 class CourseDisplayModal extends React.Component {
 
     constructor(props) {
         super(props);
-        this.handleBlackList = this.handleBlackList.bind(this);
+        this.handleAction = this.handleAction.bind(this);
     }
 
     render() {
@@ -99,6 +116,8 @@ class CourseDisplayModal extends React.Component {
         let subject = "";
         let coursenum = 0;
         let section = 0;
+        let day_of_week = "";
+        let timerange = "";
 
         if (this.props.course != null) {
             subject = this.props.course.archtype.subject;
@@ -109,6 +128,8 @@ class CourseDisplayModal extends React.Component {
             building = this.props.course.building;
             room = this.props.course.room;
             instructor = this.props.course.instructor;
+            day_of_week = daysToString(this.props.course.dayOfWeek);
+            timerange = timeNumToString(this.props.course.startTime) + "-" + timeNumToString(this.props.course.endTime)
         }
         return (
             <Modal show={this.props.course != null} onHide={this.props.closeModal}>
@@ -127,6 +148,16 @@ class CourseDisplayModal extends React.Component {
                                 Credit
                             </td>
                             <td>{credit}</td>
+                        </tr>
+                        <tr>
+                            <td>Day of week</td>
+                            <td>{day_of_week}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Time
+                            </td>
+                            <td>{timerange}</td>
                         </tr>
                         <tr>
                             <td>
@@ -149,8 +180,8 @@ class CourseDisplayModal extends React.Component {
                     <Button variant="secondary" onClick={this.props.closeModal}>
                         Close
                     </Button>
-                    <Button variant="danger" onClick={this.handleBlackList}>
-                        Blacklist
+                    <Button variant="danger" onClick={this.handleAction}>
+                        {this.props.actionName}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -158,8 +189,8 @@ class CourseDisplayModal extends React.Component {
     }
 
 
-    handleBlackList() {
-        this.props.blacklist(this.props.course.id);
+    handleAction() {
+        this.props.action(this.props.course);
         this.props.closeModal();
     }
 
@@ -218,7 +249,8 @@ class ScheduleSectionsDisplay extends React.Component {
                     onSelectEvent={this.displaySchedule}
                 />
 
-                <CourseDisplayModal closeModal={this.closeModal} course={modalCourse} blacklist={this.props.blacklist}/>
+                <CourseDisplayModal closeModal={this.closeModal} course={modalCourse} action={this.props.blacklist}
+                                    actionName="Blacklist"/>
             </>
         )
     }
@@ -842,6 +874,53 @@ class CourseProfileForm extends React.Component {
 
 }
 
+class BlackListViewer extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {lastClicked: null};
+        this.closeModal = this.closeModal.bind(this);
+    }
+
+    displaySchedule(id) {
+        if (this.state.lastClicked !== id) {
+            this.setState({lastClicked: id})
+        }
+    }
+
+    closeModal() {
+        this.setState({lastClicked: null})
+    }
+
+    render() {
+        let display_functions = {};
+        for (let id in this.props.blacklist) {
+            display_functions[id] = this.displaySchedule.bind(this, id);
+        }
+
+        let modalCourse = null;
+        if (this.state.lastClicked != null) {
+            modalCourse = this.props.blacklist[this.state.lastClicked];
+        }
+        return (
+            <>
+                <h3>Blacklist</h3>
+                <ListGroup>
+                    {Object.keys(this.props.blacklist).map((id) => {
+                        return (<ListGroup.Item key={id} action onClick={display_functions[id]}>
+                            {this.props.blacklist[id].archtype.subject} {this.props.blacklist[id].archtype.courseNumber}-{this.props.blacklist[id].section}
+                        </ListGroup.Item>)
+                    })}
+                </ListGroup>
+
+                <CourseDisplayModal closeModal={this.closeModal} course={modalCourse}
+                                    action={this.props.removeFromBlacklist} actionName="Remove from Blacklist"/>
+            </>
+        )
+    }
+
+}
+
 class NinePlannerApp extends React.Component {
 
     constructor(props) {
@@ -857,8 +936,10 @@ class NinePlannerApp extends React.Component {
                 blacklist: []
             }
         };
+        this.blacklist_course = {};
         this.setProfile = this.setProfile.bind(this);
         this.blacklist = this.blacklist.bind(this);
+        this.removeFromBlacklist = this.removeFromBlacklist.bind(this);
     }
 
     setProfile(profile) {
@@ -875,10 +956,24 @@ class NinePlannerApp extends React.Component {
         })
     }
 
-    blacklist(id) {
+    blacklist(course) {
         let old_profile = this.state.profile;
         let new_profile = Object.assign({}, old_profile);
-        new_profile.blacklist.push(id);
+        new_profile.blacklist.push(course.id);
+        this.blacklist_course[course.id] = course;
+        this.setProfile(new_profile);
+    }
+
+    removeFromBlacklist(course) {
+        let old_profile = this.state.profile;
+        let new_profile = Object.assign({}, old_profile);
+        delete this.blacklist_course[course.id];
+
+        let index = new_profile.blacklist.indexOf(course.id);
+        if (index > -1) {
+            new_profile.blacklist.splice(index, 1);
+        }
+
         this.setProfile(new_profile);
     }
 
@@ -899,6 +994,12 @@ class NinePlannerApp extends React.Component {
                 <Row>
                     <Col>
                         <ScheduleResultDisplay schedule={this.state.schedule} blacklist={this.blacklist}/>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <BlackListViewer blacklist={this.blacklist_course}
+                                         removeFromBlacklist={this.removeFromBlacklist}/>
                     </Col>
                 </Row>
             </Container>
