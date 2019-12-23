@@ -1,14 +1,24 @@
 var path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
+const DefinePlugin = require("webpack").DefinePlugin;
+
 
 module.exports = {
     entry: './src/main/js/app.js',
     devtool: 'sourcemaps',
     cache: true,
-    mode: 'development',
+    mode: 'production',
     output: {
         path: __dirname,
         filename: './src/main/resources/static/js/bundle.js'
     },
+    plugins: [
+        new DefinePlugin({
+            'process.env': {
+                'NODE_ENV': JSON.stringify('production')
+            }
+        })
+    ],
     module: {
         rules: [
             {
@@ -26,5 +36,8 @@ module.exports = {
                 use: ['style-loader', 'css-loader'],
             }
         ]
-    }
+    },
+    optimization: {
+        minimizer: [new TerserPlugin({ /* additional options here */})],
+    },
 };
