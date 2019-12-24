@@ -23,7 +23,7 @@ const defaultRequest = require('rest/interceptor/defaultRequest');
 const errorCode = require('rest/interceptor/errorCode');
 const client = rest.wrap(mime).wrap(errorCode).wrap(defaultRequest, {headers: {'Accept': 'application/json'}});
 const localizer = momentLocalizer(moment);
-
+const app_path = getAppPath();
 
 const WEEK_MAP = {
     "MONDAY": 1,
@@ -34,6 +34,15 @@ const WEEK_MAP = {
     "SATURDAY": 6,
     "SUNDAY": 0
 };
+
+function getAppPath() {
+    let pathArray = location.pathname.split('/');
+    let appPath = "/";
+    for (let i = 1; i < pathArray.length - 1; i++) {
+        appPath += pathArray[i] + "/";
+    }
+    return appPath;
+}
 
 
 function getWeekDay(day) {
@@ -321,7 +330,7 @@ class CourseProfileFormEntry extends React.Component {
         client(
             {
                 method: "GET",
-                path: `/api/course/${subject}/${courseNumber}`
+                path: app_path + `/api/course/${subject}/${courseNumber}`
             }
         ).then(function (response) {
             self.props.setCourse(self.props.id, course);
@@ -777,7 +786,7 @@ class CourseProfileForm extends React.Component {
             client(
                 {
                     method: "GET",
-                    path: `/api/course/${subject}/${courseNumber}`
+                    path: app_path + `/api/course/${subject}/${courseNumber}`
                 }
             ).then(function (response) {
                 scheduleCourses.push(response.entity.id);
@@ -949,7 +958,7 @@ class NinePlannerApp extends React.Component {
             }
         );
         client({
-            method: "POST", path: "/api/plan/profile", mime: "application/json", entity: this.state.profile,
+            method: "POST", path: app_path + "/api/plan/profile", mime: "application/json", entity: this.state.profile,
             headers: {'Content-Type': 'application/json'}
         }).then(response => {
             this.setState({schedule: response.entity})
