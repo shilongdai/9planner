@@ -52,6 +52,14 @@ function getWeekDay(day) {
     return new Date(date.setDate(diff))
 }
 
+function getMinMax() {
+    let result = {};
+    let start = moment().startOf("day").add(7, "h");
+    let end = moment().endOf("day").subtract(2, 'h');
+    result.start = start.toDate();
+    result.end = end.toDate();
+    return result;
+}
 
 function getScheduleDuration(courseSection) {
     let courseStartTime = courseSection.startTime.toString().padStart(4, '0');
@@ -245,6 +253,8 @@ class ScheduleSectionsDisplay extends React.Component {
         if (this.state.lastClicked != null) {
             modalCourse = sectionMap[this.state.lastClicked];
         }
+
+        let minMax = getMinMax();
         return (
             <>
                 <Calendar
@@ -253,6 +263,9 @@ class ScheduleSectionsDisplay extends React.Component {
                     localizer={localizer}
                     onView={(event) => {
                     }}
+                    step={15}
+                    min={minMax.start}
+                    max={minMax.end}
                     views={[Views.WEEK]}
                     toolbar={false}
                     onSelectEvent={this.displaySchedule}
