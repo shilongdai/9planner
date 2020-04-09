@@ -6,6 +6,7 @@ import net.viperfish.ai.search.deterministic.RandomRestartHillClimb;
 import net.viperfish.ai.search.deterministic.Randomizer;
 import net.viperfish.ai.search.deterministic.SteepAscentHillClimbSearch;
 import net.viperfish.planner.core.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -16,6 +17,8 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
 
     private Map<String, UtilityFunctionGenerator> utilityFunctionGenerators;
     private Map<String, ConstraintHandler> constraintGenerators;
+    @Value("${planner.retry:100}")
+    private int maxRetry;
 
     public HeuristicCSPSearchPlannerService() {
         this.utilityFunctionGenerators = new HashMap<>();
@@ -32,9 +35,8 @@ public class HeuristicCSPSearchPlannerService implements SchedulePlanner {
 
     @Override
     public Schedule plan(Profile profile) {
-        int maxTries = 10;
         Set<Semester> failed = new HashSet<>();
-        for (int i = 0; i < maxTries; ++i) {
+        for (int i = 0; i < maxRetry; ++i) {
             Semester semester = planSemester(profile, failed);
             if (semester != null) {
                 Schedule schedule = generateSchedule(profile, semester);
