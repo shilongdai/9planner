@@ -774,6 +774,10 @@ class CourseProfileForm extends React.Component {
         let scheduleCourses = [];
         let self = this;
         let null_course = 0;
+        let old_blacklist = [];
+        for (let id in this.props.blacklist) {
+            old_blacklist.push(id);
+        }
         for (let id in this.state.courses) {
             let name = this.state.courses[id];
             if (name === "") {
@@ -792,7 +796,7 @@ class CourseProfileForm extends React.Component {
                 scheduleCourses.push(response.entity.id);
                 if (scheduleCourses.length === (Object.keys(self.state.courses).length - null_course)) {
                     self.props.setProfile({
-                        blacklist: self.props.blacklist,
+                        blacklist: old_blacklist,
                         metrics: self.state.metrics,
                         archtypeIds: scheduleCourses
                     })
